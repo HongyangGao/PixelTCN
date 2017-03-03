@@ -1,7 +1,8 @@
 import time
 import tensorflow as tf
+import numpy as np
+from network import DilatedPixelCNN
 from tensorflow.examples.tutorials.mnist import input_data
-from cifar10 import IMAGE_SIZE, inputs, maybe_download_and_extract
 
 
 def configure():
@@ -19,30 +20,20 @@ def configure():
     flags.DEFINE_boolean("is_train", True, "Training or testing")
     flags.DEFINE_string("log_level", "INFO", "Log level")
     flags.DEFINE_integer("random_seed", int(time.time()), "random seed")
+
+    # network
+    flags.DEFINE_integer('network_depth', 5, 'network depth for U-Net')
+    flags.DEFINE_integer('class_num', 3, 'output class number')
+    flags.DEFINE_integer('start_channel_num', 64, 'start number of outputs')
+    flags.DEFINE_boolean('use_gpu', False, 'use gpu or not')
+
     return flags.FLAGS
 
 
-def prepare_data(dataset):
-    DATA_DIR = os.path.join(conf.data_dir, conf.dataset)
-    if conf.dataset == "mnist":
-        mnist = input_data.read_data_sets(DATA_DIR, one_hot=True)
-        next_train_batch = lambda x: mnist.train.next_batch(x)[0]
-        next_test_batch = lambda x: mnist.test.next_batch(x)[0]
-        height, width, channel = 28, 28, 1
-        train_step_per_epoch = mnist.train.num_examples / conf.batch_size
-        test_step_per_epoch = mnist.test.num_examples / conf.batch_size
-    elif conf.dataset == "cifar":
-        maybe_download_and_extract(DATA_DIR)
-        images, labels = inputs(eval_data=False, 
-            data_dir=os.path.join(DATA_DIR, 'cifar-10-batches-bin'), batch_size=conf.batch_size)
-        height, width, channel = IMAGE_SIZE, IMAGE_SIZE, 3
-
-# logging
-logger = logging.getLogger()
-logger.setLevel(conf.log_level)
-
-# random seed
-tf.set_random_seed(conf.random_seed)
-
-
-
+if __name__ == '__main__':
+    conf = configure()
+    sess = tf.Session()
+    model = DilatedPixelCNN(sess, conf, 3, 16, 16, 3)
+    inputs = np.ones((3,16,16,3))
+    model.train(inputs)
+    writer = tf.summary.FileWriter('./my_graph', model.sess.graph)
