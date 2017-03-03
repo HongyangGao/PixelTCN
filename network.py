@@ -13,13 +13,11 @@ class DilatedPixelCNN(object):
         self.pool_kernel_size = (2, 2)
         if conf.use_gpu:
             self.data_format = 'NCHW'
-            self.axis = (2, 3)
-            self.channel_axis = 1
+            self.axis, self.channel_axis = (2, 3), 1
             self.input_shape = [self.batch, self.channel, self.height, self.width]
         else:
             self.data_format = 'NHWC'
-            self.axis = (1, 2)
-            self.channel_axis = 3
+            self.axis, self.channel_axis = (1, 2), 3
             self.input_shape = [self.batch, self.height, self.width, self.channel]
         self.inputs = tf.placeholder(tf.float32, self.input_shape, 'inputs')
         self.annotations = tf.placeholder(tf.float32, self.input_shape, 'annotations')
