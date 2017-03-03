@@ -67,10 +67,14 @@ class DilatedPixelCNN(object):
     def train(self, data):
         train_images = []
         data_reader = BatchData(train_images)
+        optimizer = tf.train.AdamOptimizer(self.conf.learning_rate)
         for iter_num in range(self.conf.max_epoch):
             images, annotations = data_reader.next_batch(self.batch)
             feed_dict = {self.inputs: images, self.annotations: annotations}
-        self.sess.run(self.model, feed_dict=feed_dict)
+            pred_annos = self.sess.run(self.model, feed_dict=feed_dict)
+            loss = tf.reduce_mean(
+                tf.losses.sparse_softmax_cross_entropy(annotations, pred_annos))
+            
 
     def test(self):
         pass
