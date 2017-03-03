@@ -1,3 +1,4 @@
+import os
 import time
 import tensorflow as tf
 import numpy as np
@@ -20,20 +21,23 @@ def configure():
     flags.DEFINE_boolean("is_train", True, "Training or testing")
     flags.DEFINE_string("log_level", "INFO", "Log level")
     flags.DEFINE_integer("random_seed", int(time.time()), "random seed")
-
     # network
     flags.DEFINE_integer('network_depth', 5, 'network depth for U-Net')
-    flags.DEFINE_integer('class_num', 3, 'output class number')
+    flags.DEFINE_integer('class_num', 21, 'output class number')
     flags.DEFINE_integer('start_channel_num', 64, 'start number of outputs')
-    flags.DEFINE_boolean('use_gpu', False, 'use gpu or not')
+    flags.DEFINE_boolean('use_gpu', False, 'use GPU or not')
 
     return flags.FLAGS
 
 
-if __name__ == '__main__':
+def main():
     conf = configure()
     sess = tf.Session()
     model = DilatedPixelCNN(sess, conf, 3, 16, 16, 3)
     inputs = np.ones((3,16,16,3))
     model.train(inputs)
     writer = tf.summary.FileWriter('./my_graph', model.sess.graph)
+
+if __name__ == '__main__':
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    tf.app.run()
