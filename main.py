@@ -1,42 +1,44 @@
 import os
 import time
 import tensorflow as tf
-import numpy as np
 from network import DilatedPixelCNN
-from tensorflow.examples.tutorials.mnist import input_data
 
 
 def configure():
-    flags = tf.app.flags
     # training
-    flags.DEFINE_float("max_epoch", 100000, "# of step in an epoch")
-    flags.DEFINE_float("test_step", 100, "# of step to test a model")
-    flags.DEFINE_float("save_step", 1000, "# of step to save a model")
-    flags.DEFINE_float("learning_rate", 1e-3, "learning rate")
+    flags = tf.app.flags
+    flags.DEFINE_integer('max_epoch', 1, '# of step in an epoch')
+    flags.DEFINE_integer('test_step', 100, '# of step to test a model')
+    flags.DEFINE_integer('save_step', 1000, '# of step to save a model')
+    flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
     # data
-    flags.DEFINE_string("dataset", "mnist", "Name of dataset [mnist, cifar]")
-    flags.DEFINE_string("data_dir", "data", "Name of data directory")
-    flags.DEFINE_string("sample_dir", "samples", "Sample directory")
+    flags.DEFINE_string('data_dir', './dataset', 'Name of data directory')
+    flags.DEFINE_string('data_list', './dataset/train.txt', 'Training data list')
+    flags.DEFINE_string('sample_dir', 'samples', 'Sample directory')
+    flags.DEFINE_integer('batch', 2, 'batch size')
+    flags.DEFINE_integer('channel', 3, 'channel size')
+    flags.DEFINE_integer('height', 320, 'height size')
+    flags.DEFINE_integer('width', 320, 'width size')
     # Debug
-    flags.DEFINE_boolean("is_train", True, "Training or testing")
-    flags.DEFINE_string("log_level", "INFO", "Log level")
-    flags.DEFINE_integer("random_seed", int(time.time()), "random seed")
+    flags.DEFINE_boolean('is_train', True, 'Training or testing')
+    flags.DEFINE_string('log_level', 'INFO', 'Log level')
+    flags.DEFINE_integer('random_seed', int(time.time()), 'random seed')
     # network
     flags.DEFINE_integer('network_depth', 5, 'network depth for U-Net')
     flags.DEFINE_integer('class_num', 21, 'output class number')
     flags.DEFINE_integer('start_channel_num', 64, 'start number of outputs')
     flags.DEFINE_boolean('use_gpu', False, 'use GPU or not')
-
+    flags.FLAGS.__dict__['__parsed'] = False
     return flags.FLAGS
 
 
-def main():
+def main(_):
     conf = configure()
     sess = tf.Session()
-    model = DilatedPixelCNN(sess, conf, 3, 16, 16, 3)
-    inputs = np.ones((3,16,16,3))
-    model.train(inputs)
+    model = DilatedPixelCNN(sess, conf)
+    model.train()
     writer = tf.summary.FileWriter('./my_graph', model.sess.graph)
+
 
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
