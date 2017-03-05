@@ -1,0 +1,10 @@
+/JPEGImages/2007_000032.jpg /SegmentationClassAug/2007_000032.png
+/JPEGImages/2007_000039.jpg /SegmentationClassAug/2007_000039.png
+/JPEGImages/2007_000063.jpg /SegmentationClassAug/2007_000063.png
+/JPEGImages/2007_000068.jpg /SegmentationClassAug/2007_000068.png
+/JPEGImages/2007_000121.jpg /SegmentationClassAug/2007_000121.png
+/JPEGImages/2007_000170.jpg /SegmentationClassAug/2007_000170.png
+/JPEGImages/2007_000241.jpg /SegmentationClassAug/2007_000241.png
+/JPEGImages/2007_000243.jpg /SegmentationClassAug/2007_000243.png
+/JPEGImages/2007_000250.jpg /SegmentationClassAug/2007_000250.png
+/JPEGImages/2007_000256.jpg /SegmentationClassAug/2007_000256.png
