@@ -40,12 +40,10 @@ class DilatedPixelCNN(object):
             name = 'up%s' % layer_index
             down_inputs = down_outputs[layer_index]
             outputs = self.construct_up_block(outputs, down_inputs, name, final=is_final)
-        optimizer = tf.train.AdamOptimizer(self.conf.learning_rate)
         self.prediction = outputs
-        print('------>', outputs.shape, self.annotations.shape)
         self.loss_op = tf.reduce_mean(
             tf.losses.softmax_cross_entropy(self.annotations, self.prediction))
-        # self.train_op = optimizer.minimize(self.loss_op, 'train_op')
+        self.train_op = tf.train.AdamOptimizer(self.conf.learning_rate).minimize(self.loss_op, name='train_op')
 
     def construct_down_block(self, inputs, name, down_outputs, first=False):
         num_outputs = self.conf.start_channel_num if first else 2*inputs.shape[self.channel_axis].value
@@ -72,14 +70,13 @@ class DilatedPixelCNN(object):
         return conv3
 
     def train(self):
-        
         self.data_reader.start()
-        for iter_num in range(self.conf.max_epoch):
+        for epoch_num in range(self.conf.max_epoch):
             loss = self.sess.run(self.loss_op)
-            # loss, _ = self.sess.run([self.loss_op, self.train_op], feed_dict=feed_dict)
-            if iter_num % self.conf.save_step:
+            loss, _ = self.sess.run([self.loss_op, self.train_op])
+            if epoch % self.conf.save_step == 0:
                 self.save()
-            if iter_num % self.conf.test_step:
+            if epoch % self.conf.test_step == 0:
                 self.test()
         self.data_reader.close()
 
