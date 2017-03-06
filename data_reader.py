@@ -9,24 +9,20 @@ class BatchDataReader(object):
         images = tf.convert_to_tensor(images, dtype=tf.string)
         labels = tf.convert_to_tensor(labels, dtype=tf.string)
         queue = tf.train.slice_input_producer([images, labels])
-        self.images, self.labels = self.read_dataset(queue, input_size)
+        self.image, self.label = self.read_dataset(queue, input_size)
 
     def next_batch(self, batchsize):
-        image_batch, label_batch = tf.train.batch([self.images, self.labels], batchsize)
-        label_batch = tf.squeeze(label_batch, axis=[3])
-        import ipdb; ipdb.set_trace()
-        label_batch = tf.contrib.layers.one_hot_encoding(labels=label_batch, num_classes=21)
-        label_batch = tf.one_hot(label_batch, depth=21)
-        #label_batch = tf.reshape(label_batch, [-1, 21])
+        image_batch, label_batch = tf.train.batch([self.image, self.label], batchsize)
+        label_batch = tf.one_hot(tf.squeeze(label_batch, axis=[3]), depth=21)
         return image_batch, label_batch
 
     def read_dataset(self, queue, input_size):
-        images = tf.image.decode_jpeg(tf.read_file(queue[0]), channels=3)
-        labels = tf.image.decode_png(tf.read_file(queue[1]), channels= 1)
-        images = tf.image.resize_images(images, input_size)
-        labels = tf.image.resize_images(labels, input_size)
-        images -= tf.reduce_mean(tf.cast(images, dtype= tf.float32), (0, 1))
-        return images, labels
+        image = tf.image.decode_jpeg(tf.read_file(queue[0]), channels=3)
+        label = tf.image.decode_png(tf.read_file(queue[1]), channels= 1)
+        image = tf.image.resize_images(image, input_size)
+        label = tf.image.resize_images(label, input_size, 1)
+        image -= tf.reduce_mean(tf.cast(image, dtype= tf.float32), (0, 1), name=scope+'/mean')
+        return image, label
 
     def read_data(self, data_dir, data_list):
         with open(data_list, 'r') as f:
@@ -37,12 +33,11 @@ class BatchDataReader(object):
                 labels.append(data_dir + label)
         return images, labels
 
-    def __enter__(self):
+    def start(self):
         self.coord = tf.train.Coordinator()
         self.threads = tf.train.start_queue_runners(coord=self.coord, sess=self.sess)
         return self
 
-    def __exit__(self, type, value, traceback):
-        print('---->batchdatareader exit')
+    def close(self):
         self.coord.request_stop()
         self.coord.join(self.threads)

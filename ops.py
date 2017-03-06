@@ -27,7 +27,7 @@ def dilated_conv(inputs, num_outputs, kernel_size, scope, axis, data_format):
         strides = [1, 1, 1, 1]
         conv2 = tf.nn.conv2d(conv1, weights, strides, padding='SAME',
             data_format=data_format)
-    return tf.add(conv1, conv2, name=scope+'/add2')
+    return tf.nn.relu(tf.add(conv1, conv2, name=scope+'/add2'), name=scope+'/relu')
 
 
 def get_mask(shape, scope):

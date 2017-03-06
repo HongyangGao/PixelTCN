@@ -20,8 +20,9 @@ class DilatedPixelCNN(object):
             self.axis, self.channel_axis = (1, 2), 3
             self.input_shape = [self.conf.batch, self.conf.height, self.conf.width, self.conf.channel]
             self.output_shape = [self.conf.batch, self.conf.height, self.conf.width, self.conf.class_num]
-        self.inputs = tf.placeholder(tf.float32, self.input_shape, 'inputs')
-        self.annotations = tf.placeholder(tf.float32, self.output_shape, 'annotations')
+        input_params = (self.sess, self.conf.data_dir, self.conf.data_list, (self.conf.height, self.conf.width))
+        self.data_reader = BatchDataReader(*input_params)
+        self.inputs, self.annotations = self.data_reader.next_batch(self.conf.batch)
         self.build_network()
         tf.set_random_seed(conf.random_seed)
         self.sess.run(tf.global_variables_initializer())
@@ -44,7 +45,6 @@ class DilatedPixelCNN(object):
         print('------>', outputs.shape, self.annotations.shape)
         self.loss_op = tf.reduce_mean(
             tf.losses.softmax_cross_entropy(self.annotations, self.prediction))
-        # import ipdb; ipdb.set_trace()
         # self.train_op = optimizer.minimize(self.loss_op, 'train_op')
 
     def construct_down_block(self, inputs, name, down_outputs, first=False):
@@ -72,18 +72,16 @@ class DilatedPixelCNN(object):
         return conv3
 
     def train(self):
-        input_params = (self.sess, self.conf.data_dir, self.conf.data_list, (self.conf.height, self.conf.width))
-        with BatchDataReader(*input_params) as data_reader:
-            for iter_num in range(self.conf.max_epoch):
-                images, annotations = data_reader.next_batch(self.conf.batch)
-                feed_dict = {self.inputs: images, self.annotations: annotations}
-                loss = self.sess.run(self.loss_op, feed_dict=feed_dict)
-                # loss, _ = self.sess.run([self.loss_op, self.train_op], feed_dict=feed_dict)
-
-                if iter_num % self.conf.save_step:
-                    self.save()
-                if iter_num % self.conf.test_step:
-                    self.test()
+        
+        self.data_reader.start()
+        for iter_num in range(self.conf.max_epoch):
+            loss = self.sess.run(self.loss_op)
+            # loss, _ = self.sess.run([self.loss_op, self.train_op], feed_dict=feed_dict)
+            if iter_num % self.conf.save_step:
+                self.save()
+            if iter_num % self.conf.test_step:
+                self.test()
+        self.data_reader.close()
 
     def test(self):
         print('---->testing')
