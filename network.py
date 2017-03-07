@@ -98,11 +98,10 @@ class DilatedPixelCNN(object):
     def train(self):
         self.data_reader.start()
         for epoch_num in range(self.conf.max_epoch):
-            loss = self.sess.run(self.loss_op)
             loss, _ = self.sess.run([self.loss_op, self.train_op])
-            if epoch % self.conf.save_step == 0:
+            if epoch_num % self.conf.save_step == 0:
                 self.save()
-            if epoch % self.conf.test_step == 0:
+            if epoch_num % self.conf.test_step == 0:
                 self.test()
         self.data_reader.close()
 

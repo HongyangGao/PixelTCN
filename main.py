@@ -7,7 +7,7 @@ from network import DilatedPixelCNN
 def configure():
     # training
     flags = tf.app.flags
-    flags.DEFINE_integer('max_epoch', 10, '# of step in an epoch')
+    flags.DEFINE_integer('max_epoch', 1, '# of step in an epoch')
     flags.DEFINE_integer('test_step', 100, '# of step to test a model')
     flags.DEFINE_integer('save_step', 1000, '# of step to save a model')
     flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
@@ -37,7 +37,8 @@ def main(_):
     sess = tf.Session()
     model = DilatedPixelCNN(sess, conf)
     model.train()
-    writer = tf.summary.FileWriter('./my_graph', model.sess.graph)
+    writer = tf.summary.FileWriter('./my_graph', sess.graph)
+    writer.close()
 
 
 if __name__ == '__main__':
