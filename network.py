@@ -33,6 +33,11 @@ class DilatedPixelCNN(object):
         self.build_network()
         tf.set_random_seed(conf.random_seed)
         self.sess.run(tf.global_variables_initializer())
+        # save point configure
+        trainable_vars = tf.trainable_variables()
+        self.saver = tf.train.Saver(var_list=trainable_vars, max_to_keep=0)
+        if not os.path.exists(conf.logdir):
+            os.makedirs(conf.logdir)
 
     def build_network(self):
         outputs = self.inputs
@@ -50,8 +55,9 @@ class DilatedPixelCNN(object):
             outputs = self.construct_up_block(
                 outputs, down_inputs, name, final=is_final)
         self.prediction = outputs
-        self.loss_op = tf.reduce_mean(
-            tf.losses.softmax_cross_entropy(self.annotations, self.prediction))
+        losses = tf.losses.softmax_cross_entropy(
+            self.annotations, self.prediction, scope='losses')
+        self.loss_op = tf.reduce_mean(losses, name='loss_op')
         self.train_op = tf.train.AdamOptimizer(
             self.conf.learning_rate).minimize(self.loss_op, name='train_op')
 
@@ -96,11 +102,13 @@ class DilatedPixelCNN(object):
         return conv3
 
     def train(self):
+        if self.conf.reload_step > 0:
+            self.reload(self.conf.reload_step)
         self.data_reader.start()
         for epoch_num in range(self.conf.max_epoch):
             loss, _ = self.sess.run([self.loss_op, self.train_op])
             if epoch_num % self.conf.save_step == 0:
-                self.save()
+                self.save(epoch_num)
             if epoch_num % self.conf.test_step == 0:
                 self.test()
         self.data_reader.close()
@@ -112,9 +120,15 @@ class DilatedPixelCNN(object):
     def predict(self):
         pass
 
-    def save(self):
+    def save(self, step):
         print('---->saving')
-        pass
+        checkpoint_path = os.path.join(conf.logdir, conf.model_name)
+        self.saver.save(self.sess, checkpoint_path, global_step=step)
 
-    def load(self):
-        pass
+    def reload(self, step):
+        checkpoint_path = os.path.join(conf.logdir, conf.model_name)
+        model_path = checkpoint_path+'-'+str(step)
+        if not os.path.exists(model_path):
+            print('------- no such checkpoint')
+            return
+        self.saver.restore(self.sess, model_path)
