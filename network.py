@@ -63,7 +63,8 @@ class DilatedPixelCNN(object):
         self.loss_op = tf.reduce_mean(losses, name='loss_op')
         tf.summary.scalar('loss', self.loss_op)
         correct_prediction = tf.equal(
-            tf.argmax(self.annotations, 1), tf.argmax(self.prediction, 1),
+            tf.argmax(self.annotations, self.channel_axis),
+            tf.argmax(self.prediction, self.channel_axis),
             name='accuracy/correct_pred')
         self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32),
             name='accuracy/accuracy')
