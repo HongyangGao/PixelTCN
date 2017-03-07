@@ -33,10 +33,12 @@ class DilatedPixelCNN(object):
             self.conf.batch)
         self.build_network()
         tf.set_random_seed(conf.random_seed)
-        self.sess.run(tf.global_variables_initializer())
+        sess.run(tf.global_variables_initializer())
         # save point configure
         trainable_vars = tf.trainable_variables()
         self.saver = tf.train.Saver(var_list=trainable_vars, max_to_keep=0)
+        if not os.path.exists(conf.modeldir):
+            os.makedirs(conf.modeldir)
         if not os.path.exists(conf.logdir):
             os.makedirs(conf.logdir)
 
@@ -59,6 +61,17 @@ class DilatedPixelCNN(object):
         losses = tf.losses.softmax_cross_entropy(
             self.annotations, self.prediction, scope='losses')
         self.loss_op = tf.reduce_mean(losses, name='loss_op')
+        tf.summary.scalar('loss', self.loss_op)
+        correct_prediction = tf.equal(
+            tf.argmax(self.annotations, 1), tf.argmax(self.prediction, 1),
+            name='accuracy/correct_pred')
+        self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32),
+            name='accuracy/accuracy')
+        tf.summary.scalar('accuracy', self.accuracy)
+        self.merged_summary = tf.summary.merge_all()
+        self.train_writer = tf.summary.FileWriter(
+            self.conf.logdir + '/train', self.sess.graph)
+        self.test_writer = tf.summary.FileWriter(self.conf.logdir + '/test')
         self.train_op = tf.train.AdamOptimizer(
             self.conf.learning_rate).minimize(self.loss_op, name='train_op')
 
@@ -112,7 +125,15 @@ class DilatedPixelCNN(object):
                 self.save(epoch_num)
             if epoch_num % self.conf.test_step == 0:
                 self.test()
+            if epoch_num % self.conf.summary_step == 0:
+                self.save_summary(epoch_num)
         self.data_reader.close()
+
+    def save_summary(self, step):
+        print('---->summarying')
+        summary = self.sess.run(self.merged_summary)
+        # import ipdb; ipdb.set_trace()
+        self.train_writer.add_summary(summary, step)
 
     def test(self):
         print('---->testing')
@@ -123,11 +144,11 @@ class DilatedPixelCNN(object):
 
     def save(self, step):
         print('---->saving')
-        checkpoint_path = os.path.join(self.conf.logdir, self.conf.model_name)
+        checkpoint_path = os.path.join(self.conf.modeldir, self.conf.model_name)
         self.saver.save(self.sess, checkpoint_path, global_step=step)
 
     def reload(self, step):
-        checkpoint_path = os.path.join(conf.logdir, conf.model_name)
+        checkpoint_path = os.path.join(conf.modeldir, conf.model_name)
         model_path = checkpoint_path+'-'+str(step)
         if not os.path.exists(model_path):
             print('------- no such checkpoint')

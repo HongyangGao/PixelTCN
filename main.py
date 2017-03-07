@@ -7,9 +7,10 @@ from network import DilatedPixelCNN
 def configure():
     # training
     flags = tf.app.flags
-    flags.DEFINE_integer('max_epoch', 1, '# of step in an epoch')
+    flags.DEFINE_integer('max_epoch', 20, '# of step in an epoch')
     flags.DEFINE_integer('test_step', 100, '# of step to test a model')
     flags.DEFINE_integer('save_step', 1000, '# of step to save a model')
+    flags.DEFINE_integer('summary_step', 1, '# of step to save the summary')
     flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
     # data
     flags.DEFINE_string('data_dir', './dataset', 'Name of data directory')
@@ -23,6 +24,7 @@ def configure():
     flags.DEFINE_boolean('is_train', True, 'Training or testing')
     flags.DEFINE_string('log_level', 'INFO', 'Log level')
     flags.DEFINE_string('logdir', './logdir', 'Log dir')
+    flags.DEFINE_string('modeldir', './modeldir', 'Model dir')
     flags.DEFINE_string('model_name', 'model', 'Model file name')
     flags.DEFINE_integer('reload_step', 0, 'Reload step')
     flags.DEFINE_integer('random_seed', int(time.time()), 'random seed')
@@ -36,12 +38,10 @@ def configure():
 
 
 def main(_):
-    conf = configure()
-    sess = tf.Session()
-    model = DilatedPixelCNN(sess, conf)
+    model = DilatedPixelCNN(tf.Session(), configure())
     model.train()
-    writer = tf.summary.FileWriter('./my_graph', sess.graph)
-    writer.close()
+    # writer = tf.summary.FileWriter('./my_graph', sess.graph)
+    # writer.close()
 
 
 if __name__ == '__main__':
