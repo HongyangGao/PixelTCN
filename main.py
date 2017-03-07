@@ -22,7 +22,7 @@ def configure():
     # Debug
     flags.DEFINE_boolean('is_train', True, 'Training or testing')
     flags.DEFINE_string('log_level', 'INFO', 'Log level')
-    flags.DEFINE_string('log_dir', './logdir', 'Log dir')
+    flags.DEFINE_string('logdir', './logdir', 'Log dir')
     flags.DEFINE_string('model_name', 'model', 'Model file name')
     flags.DEFINE_integer('reload_step', 0, 'Reload step')
     flags.DEFINE_integer('random_seed', int(time.time()), 'random seed')

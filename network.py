@@ -1,3 +1,4 @@
+import os
 import tensorflow as tf
 from data_reader import BatchDataReader
 from ops import conv2d, pool2d, dilated_conv
@@ -122,7 +123,7 @@ class DilatedPixelCNN(object):
 
     def save(self, step):
         print('---->saving')
-        checkpoint_path = os.path.join(conf.logdir, conf.model_name)
+        checkpoint_path = os.path.join(self.conf.logdir, self.conf.model_name)
         self.saver.save(self.sess, checkpoint_path, global_step=step)
 
     def reload(self, step):
