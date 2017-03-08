@@ -125,7 +125,7 @@ class DilatedPixelCNN(object):
             if epoch_num % self.conf.save_step == 0:
                 self.save(epoch_num)
             if epoch_num % self.conf.test_step == 0:
-                self.test()
+                self.test(epoch_num)
             if epoch_num % self.conf.summary_step == 0:
                 self.save_summary(epoch_num)
         self.data_reader.close()

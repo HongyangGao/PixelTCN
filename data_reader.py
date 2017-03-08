@@ -15,7 +15,7 @@ class BatchDataReader(object):
         self.image, self.label = self.read_dataset(queue, input_size, data_format)
 
     def next_batch(self, batchsize):
-        image_batch, label_batch = tf.train.batch(
+        image_batch, label_batch = tf.train.shuffle_batch(
             [self.image, self.label], batchsize, name=self.scope+'/batch')
         label_batch = tf.squeeze(
             label_batch, axis=[self.channel_axis], name=self.scope+'/squeeze')
