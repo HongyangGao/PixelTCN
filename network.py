@@ -27,7 +27,7 @@ class DilatedPixelCNN(object):
                 conf.batch, conf.height, conf.width, conf.class_num]
         input_params = (
             self.sess, conf.data_dir, conf.train_list,
-            (conf.height, conf.width), self.data_format)
+            (conf.height, conf.width), conf.class_num, self.data_format)
         self.data_reader = BatchDataReader(*input_params)
         self.inputs, self.annotations = self.data_reader.next_batch(
             self.conf.batch)
@@ -41,6 +41,9 @@ class DilatedPixelCNN(object):
             os.makedirs(conf.modeldir)
         if not os.path.exists(conf.logdir):
             os.makedirs(conf.logdir)
+        self.train_writer = tf.summary.FileWriter(
+            self.conf.logdir + '/train', self.sess.graph)
+        self.test_writer = tf.summary.FileWriter(self.conf.logdir + '/test')
 
     def build_network(self):
         outputs = self.inputs
@@ -67,12 +70,9 @@ class DilatedPixelCNN(object):
             tf.argmax(self.prediction, self.channel_axis),
             name='accuracy/correct_pred')
         self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32),
-            name='accuracy/accuracy')
+                                       name='accuracy/accuracy')
         tf.summary.scalar('accuracy', self.accuracy)
         self.merged_summary = tf.summary.merge_all()
-        self.train_writer = tf.summary.FileWriter(
-            self.conf.logdir + '/train', self.sess.graph)
-        self.test_writer = tf.summary.FileWriter(self.conf.logdir + '/test')
         self.train_op = tf.train.AdamOptimizer(
             self.conf.learning_rate).minimize(self.loss_op, name='train_op')
 
@@ -81,10 +81,10 @@ class DilatedPixelCNN(object):
             inputs.shape[self.channel_axis].value
         conv1 = conv2d(
             inputs, num_outputs, self.conv_size, name+'/conv1',
-            self.data_format)
+            self.conf.keep_prob, self.data_format)
         conv2 = conv2d(
             conv1, num_outputs, self.conv_size, name+'/conv2',
-            self.data_format)
+            self.conf.keep_prob, self.data_format)
         down_outputs.append(conv2)
         pool = pool2d(
             conv2, self.pool_size, name+'/pool', self.data_format)
@@ -94,26 +94,26 @@ class DilatedPixelCNN(object):
         num_outputs = inputs.shape[self.channel_axis].value
         conv1 = conv2d(
             inputs, 2*num_outputs, self.conv_size, name+'/conv1',
-            self.data_format)
+            self.conf.keep_prob, self.data_format)
         conv2 = conv2d(
             conv1, num_outputs, self.conv_size, name+'/conv2',
-            self.data_format)
+            self.conf.keep_prob, self.data_format)
         return conv2
 
     def construct_up_block(self, inputs, down_inputs, name, final=False):
         num_outputs = inputs.shape[self.channel_axis].value
         conv1 = dilated_conv(
             inputs, num_outputs, self.conv_size, name+'/conv1',
-            self.axis, self.data_format)
+            self.axis, self.conf.keep_prob, self.data_format)
         conv1 = tf.concat(
             [conv1, down_inputs], self.channel_axis, name=name+'/concat')
         conv2 = conv2d(
             conv1, num_outputs, self.conv_size, name+'/conv2',
-            self.data_format)
+            self.conf.keep_prob, self.data_format)
         num_outputs = self.conf.class_num if final else num_outputs/2
         conv3 = conv2d(
             conv2, num_outputs, self.conv_size, name+'/conv3',
-            self.data_format)
+            self.conf.keep_prob, self.data_format)
         return conv3
 
     def train(self):
@@ -144,7 +144,8 @@ class DilatedPixelCNN(object):
 
     def save(self, step):
         print('---->saving', step)
-        checkpoint_path = os.path.join(self.conf.modeldir, self.conf.model_name)
+        checkpoint_path = os.path.join(
+            self.conf.modeldir, self.conf.model_name)
         self.saver.save(self.sess, checkpoint_path, global_step=step)
 
     def reload(self, step):

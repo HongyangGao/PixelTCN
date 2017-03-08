@@ -3,16 +3,19 @@ import tensorflow as tf
 
 class BatchDataReader(object):
 
-    def __init__(self, sess, data_dir, data_list, input_size, data_format):
+    def __init__(self, sess, data_dir, data_list, input_size, class_num,
+                 data_format):
         self.sess = sess
         self.scope = 'data_reader'
+        self.class_num = class_num
         self.channel_axis = 3
         images, labels = self.read_data(data_dir, data_list)
         images = tf.convert_to_tensor(images, dtype=tf.string)
         labels = tf.convert_to_tensor(labels, dtype=tf.string)
         queue = tf.train.slice_input_producer(
             [images, labels], shuffle=True, name=self.scope+'/slice')
-        self.image, self.label = self.read_dataset(queue, input_size, data_format)
+        self.image, self.label = self.read_dataset(
+            queue, input_size, data_format)
 
     def next_batch(self, batch_size):
         image_batch, label_batch = tf.train.shuffle_batch(
@@ -22,7 +25,8 @@ class BatchDataReader(object):
         label_batch = tf.squeeze(
             label_batch, axis=[self.channel_axis], name=self.scope+'/squeeze')
         label_batch = tf.one_hot(
-            label_batch, depth=21, name=self.scope+'/one_hot')
+            label_batch, depth=self.class_num, axis=self.channel_axis,
+            name=self.scope+'/one_hot')
         return image_batch, label_batch
 
     def read_dataset(self, queue, input_size, data_format):
