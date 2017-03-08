@@ -62,19 +62,19 @@ class DilatedPixelCNN(object):
                 outputs, down_inputs, name, final=is_final)
         self.prediction = outputs
         losses = tf.losses.softmax_cross_entropy(
-            self.annotations, self.prediction, scope='losses')
-        self.loss_op = tf.reduce_mean(losses, name='loss_op')
+            self.annotations, self.prediction, scope='global/losses')
+        self.loss_op = tf.reduce_mean(losses, name='global/loss_op')
         tf.summary.scalar('loss', self.loss_op)
         correct_prediction = tf.equal(
             tf.argmax(self.annotations, self.channel_axis),
             tf.argmax(self.prediction, self.channel_axis),
             name='accuracy/correct_pred')
         self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32),
-                                       name='accuracy/accuracy')
+                                       name='global/accuracy')
         tf.summary.scalar('accuracy', self.accuracy)
         self.merged_summary = tf.summary.merge_all()
         self.train_op = tf.train.AdamOptimizer(
-            self.conf.learning_rate).minimize(self.loss_op, name='train_op')
+            self.conf.learning_rate).minimize(self.loss_op, name='global/train_op')
 
     def construct_down_block(self, inputs, name, down_outputs, first=False):
         num_outputs = self.conf.start_channel_num if first else 2 * \
