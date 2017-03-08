@@ -10,7 +10,7 @@ class BatchDataReader(object):
         images = tf.convert_to_tensor(images, dtype=tf.string)
         labels = tf.convert_to_tensor(labels, dtype=tf.string)
         queue = tf.train.slice_input_producer(
-            [images, labels], name=self.scope+'/slice')
+            [images, labels], shuffle=True, name=self.scope+'/slice')
         self.image, self.label = self.read_dataset(queue, input_size)
 
     def next_batch(self, batchsize):

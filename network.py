@@ -26,7 +26,7 @@ class DilatedPixelCNN(object):
             self.output_shape = [
                 conf.batch, conf.height, conf.width, conf.class_num]
         input_params = (
-            self.sess, conf.data_dir, conf.data_list,
+            self.sess, conf.data_dir, conf.train_list,
             (conf.height, conf.width))
         self.data_reader = BatchDataReader(*input_params)
         self.inputs, self.annotations = self.data_reader.next_batch(
@@ -133,7 +133,6 @@ class DilatedPixelCNN(object):
     def save_summary(self, step):
         print('---->summarying')
         summary = self.sess.run(self.merged_summary)
-        # import ipdb; ipdb.set_trace()
         self.train_writer.add_summary(summary, step)
 
     def test(self):
