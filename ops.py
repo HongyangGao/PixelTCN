@@ -6,7 +6,8 @@ def conv2d(inputs, num_outputs, kernel_size, scope, prob, d_format):
     outputs = tf.contrib.layers.conv2d(
         inputs, num_outputs, kernel_size, scope=scope,
         data_format=d_format, activation_fn=None, biases_initializer=None)
-    outputs = tf.nn.dropout(outputs, prob, name=scope+'/dropout')
+    if prob < 1.0:
+        outputs = tf.nn.dropout(outputs, prob, name=scope+'/dropout')
     return tf.contrib.layers.batch_norm(
         outputs, decay=0.9, center=True, activation_fn=tf.nn.relu,
         updates_collections=None, epsilon=1e-5, scope=scope+'/batch_norm',
@@ -22,7 +23,6 @@ def pool2d(inputs, kernel_size, scope, data_format):
 def dilated_conv(inputs, out_num, kernel_size, scope, axis, prob, d_format):
     conv1 = conv2d(
         inputs, out_num, kernel_size, scope+'/conv1', prob, d_format)
-    conv1 = tf.nn.dropout(conv1, prob, name=scope+'/dropout1')
     dilated_inputs = dilate_tensor(inputs, axis, 0, scope+'/dialte_inputs')
     dilated_conv1 = dilate_tensor(conv1, axis, 1, scope+'/dialte_conv1')
     conv1 = tf.add(dilated_inputs, dilated_conv1, scope+'/add1')
@@ -34,8 +34,9 @@ def dilated_conv(inputs, out_num, kernel_size, scope, axis, prob, d_format):
         strides = [1, 1, 1, 1]
         conv2 = tf.nn.conv2d(conv1, weights, strides, padding='SAME',
                              data_format=d_format)
-        conv2 = tf.nn.dropout(conv2, prob, name=scope+'/dropout2')
     outputs = tf.add(conv1, conv2, name=scope+'/add2')
+    if prob < 1:
+        outputs = tf.nn.dropout(outputs, prob, name=scope+'/dropout2')
     return tf.contrib.layers.batch_norm(
         outputs, decay=0.9, activation_fn=tf.nn.relu, updates_collections=None,
         epsilon=1e-5, scope=scope+'/batch_norm', data_format=d_format)
