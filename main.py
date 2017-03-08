@@ -14,7 +14,8 @@ def configure():
     flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
     # data
     flags.DEFINE_string('data_dir', './dataset', 'Name of data directory')
-    flags.DEFINE_string('data_list', './dataset/train.txt', 'Training data')
+    flags.DEFINE_string('train_list', './dataset/train.txt', 'Training data')
+    flags.DEFINE_string('valid_list', './dataset/val.txt', 'Training data')
     flags.DEFINE_string('sample_dir', 'samples', 'Sample directory')
     flags.DEFINE_integer('batch', 2, 'batch size')
     flags.DEFINE_integer('channel', 3, 'channel size')
