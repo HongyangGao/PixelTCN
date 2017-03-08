@@ -27,7 +27,7 @@ class DilatedPixelCNN(object):
                 conf.batch, conf.height, conf.width, conf.class_num]
         input_params = (
             self.sess, conf.data_dir, conf.train_list,
-            (conf.height, conf.width))
+            (conf.height, conf.width), self.data_format)
         self.data_reader = BatchDataReader(*input_params)
         self.inputs, self.annotations = self.data_reader.next_batch(
             self.conf.batch)
@@ -131,19 +131,19 @@ class DilatedPixelCNN(object):
         self.data_reader.close()
 
     def save_summary(self, step):
-        print('---->summarying')
+        print('---->summarying', step)
         summary = self.sess.run(self.merged_summary)
         self.train_writer.add_summary(summary, step)
 
-    def test(self):
-        print('---->testing')
+    def test(self, step):
+        print('---->testing', step)
         pass
 
     def predict(self):
         pass
 
     def save(self, step):
-        print('---->saving')
+        print('---->saving', step)
         checkpoint_path = os.path.join(self.conf.modeldir, self.conf.model_name)
         self.saver.save(self.sess, checkpoint_path, global_step=step)
 

@@ -3,7 +3,7 @@ import tensorflow as tf
 
 class BatchDataReader(object):
 
-    def __init__(self, sess, data_dir, data_list, input_size):
+    def __init__(self, sess, data_dir, data_list, input_size, data_format):
         self.sess = sess
         self.scope = 'data_reader'
         images, labels = self.read_data(data_dir, data_list)
@@ -11,7 +11,7 @@ class BatchDataReader(object):
         labels = tf.convert_to_tensor(labels, dtype=tf.string)
         queue = tf.train.slice_input_producer(
             [images, labels], shuffle=True, name=self.scope+'/slice')
-        self.image, self.label = self.read_dataset(queue, input_size)
+        self.image, self.label = self.read_dataset(queue, input_size, data_format)
 
     def next_batch(self, batchsize):
         image_batch, label_batch = tf.train.batch(
@@ -22,13 +22,16 @@ class BatchDataReader(object):
             label_batch, depth=21, name=self.scope+'/one_hot')
         return image_batch, label_batch
 
-    def read_dataset(self, queue, input_size):
+    def read_dataset(self, queue, input_size, data_format):
         image = tf.image.decode_jpeg(
             tf.read_file(queue[0]), channels=3, name=self.scope+'/image')
         label = tf.image.decode_png(
             tf.read_file(queue[1]), channels=1, name=self.scope+'/label')
         image = tf.image.resize_images(image, input_size)
         label = tf.image.resize_images(label, input_size, 1)
+        if data_format == 'NCHW':
+            image = tf.transpose(image, [0, 3, 1, 2])
+            label = tf.transpose(label, [0, 3, 1, 2])
         image -= tf.reduce_mean(tf.cast(image, dtype=tf.float32),
                                 (0, 1), name=self.scope+'/mean')
         return image, label
