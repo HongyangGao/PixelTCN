@@ -17,7 +17,7 @@ def configure():
     flags.DEFINE_string('train_list', './dataset/train.txt', 'Training data')
     flags.DEFINE_string('valid_list', './dataset/val.txt', 'Training data')
     flags.DEFINE_string('sample_dir', 'samples', 'Sample directory')
-    flags.DEFINE_integer('batch', 2, 'batch size')
+    flags.DEFINE_integer('batch', 100, 'batch size')
     flags.DEFINE_integer('channel', 3, 'channel size')
     flags.DEFINE_integer('height', 320, 'height size')
     flags.DEFINE_integer('width', 320, 'width size')
