@@ -25,18 +25,6 @@ class DilatedPixelCNN(object):
                 conf.batch, conf.height, conf.width, conf.channel]
             self.output_shape = [
                 conf.batch, conf.height, conf.width, conf.class_num]
-        input_params = (
-            self.sess, conf.data_dir, conf.train_list,
-            (conf.height, conf.width), conf.class_num, self.data_format)
-        self.data_reader = BatchDataReader(*input_params)
-        self.inputs, self.annotations = self.data_reader.next_batch(
-            self.conf.batch)
-        self.build_network()
-        tf.set_random_seed(conf.random_seed)
-        sess.run(tf.global_variables_initializer())
-        # save point configure
-        trainable_vars = tf.trainable_variables()
-        self.saver = tf.train.Saver(var_list=trainable_vars, max_to_keep=0)
         if not os.path.exists(conf.modeldir):
             os.makedirs(conf.modeldir)
         if not os.path.exists(conf.logdir):
@@ -44,9 +32,44 @@ class DilatedPixelCNN(object):
         self.train_writer = tf.summary.FileWriter(
             self.conf.logdir + '/train', self.sess.graph)
         self.test_writer = tf.summary.FileWriter(self.conf.logdir + '/test')
+        self.build_network()
+        input_params = (
+            self.sess, self.conf.data_dir, self.conf.train_list,
+            (self.conf.height, self.conf.width), self.conf.class_num, self.data_format)
+        self.train_data_reader = BatchDataReader(*input_params)
+        self.train_inputs, self.train_annotations = self.train_data_reader.next_batch(
+            self.conf.batch)
+        tf.set_random_seed(self.conf.random_seed)
+        sess.run(tf.global_variables_initializer())
+        # save point configure
+        trainable_vars = tf.trainable_variables()
+        self.saver = tf.train.Saver(var_list=trainable_vars, max_to_keep=0)
 
     def build_network(self):
-        outputs = self.inputs
+        self.inputs = tf.placeholder(tf.float32, self.input_shape, name='inputs')
+        self.annotations = tf.placeholder(tf.int32, self.output_shape, name='annotations')
+        self.prediction = self.inference(self.inputs)
+        losses = tf.losses.softmax_cross_entropy(
+            self.annotations, self.prediction, scope='global/losses')
+        self.loss_op = tf.reduce_mean(losses, name='global/loss_op')
+        tf.summary.scalar('loss', self.loss_op)
+        correct_prediction = tf.equal(
+            tf.argmax(self.annotations, self.channel_axis),
+            tf.argmax(self.prediction, self.channel_axis),
+            name='accuracy/correct_pred')
+        self.accuracy = tf.reduce_mean(
+            tf.cast(correct_prediction, tf.float32), name='global/accuracy')
+        tf.summary.scalar('accuracy', self.accuracy)
+        # self.m_iou = tf.contrib.metrics.streaming_mean_iou(
+        #     self.prediction, self.annotations, self.conf.class_num)
+        # tf.summary.scalar('m_iou', self.m_iou)
+        optimizer = tf.train.AdamOptimizer(self.conf.learning_rate)
+        self.train_op = optimizer.minimize(
+            self.loss_op, name='global/train_op')
+        self.merged_summary = tf.summary.merge_all()
+
+    def inference(self, inputs):
+        outputs = inputs
         down_outputs = []
         for layer_index in range(self.conf.network_depth-1):
             is_first = True if not layer_index else False
@@ -60,21 +83,7 @@ class DilatedPixelCNN(object):
             down_inputs = down_outputs[layer_index]
             outputs = self.construct_up_block(
                 outputs, down_inputs, name, final=is_final)
-        self.prediction = outputs
-        losses = tf.losses.softmax_cross_entropy(
-            self.annotations, self.prediction, scope='global/losses')
-        self.loss_op = tf.reduce_mean(losses, name='global/loss_op')
-        tf.summary.scalar('loss', self.loss_op)
-        correct_prediction = tf.equal(
-            tf.argmax(self.annotations, self.channel_axis),
-            tf.argmax(self.prediction, self.channel_axis),
-            name='accuracy/correct_pred')
-        self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32),
-                                       name='global/accuracy')
-        tf.summary.scalar('accuracy', self.accuracy)
-        self.merged_summary = tf.summary.merge_all()
-        self.train_op = tf.train.AdamOptimizer(
-            self.conf.learning_rate).minimize(self.loss_op, name='global/train_op')
+        return outputs
 
     def construct_down_block(self, inputs, name, down_outputs, first=False):
         num_outputs = self.conf.start_channel_num if first else 2 * \
@@ -119,9 +128,12 @@ class DilatedPixelCNN(object):
     def train(self):
         if self.conf.reload_step > 0:
             self.reload(self.conf.reload_step)
-        self.data_reader.start()
+        self.train_data_reader.start()
         for epoch_num in range(self.conf.max_epoch):
-            loss, _ = self.sess.run([self.loss_op, self.train_op])
+            inputs, annotations = self.sess.run([self.train_inputs, self.train_annotations])
+            feed_dict = {self.inputs: inputs, self.annotations: annotations}
+            loss, _ = self.sess.run(
+                [self.loss_op, self.train_op], feed_dict=feed_dict)
             if epoch_num % self.conf.save_step == 0:
                 self.save(epoch_num)
             if epoch_num % self.conf.test_step == 0:

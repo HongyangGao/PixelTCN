@@ -36,7 +36,7 @@ def dilated_conv(inputs, out_num, kernel_size, scope, axis, prob, d_format):
                              data_format=d_format)
     outputs = tf.add(conv1, conv2, name=scope+'/add2')
     if prob < 1:
-        outputs = tf.nn.dropout(outputs, prob, name=scope+'/dropout2')
+        outputs = tf.nn.dropout(outputs, prob, name=scope+'/dropout')
     return tf.contrib.layers.batch_norm(
         outputs, decay=0.9, activation_fn=tf.nn.relu, updates_collections=None,
         epsilon=1e-5, scope=scope+'/batch_norm', data_format=d_format)
