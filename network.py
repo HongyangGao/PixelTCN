@@ -70,8 +70,8 @@ class DilatedPixelCNN(object):
             annotations, predictions, scope=name+'/losses')
         loss_op = tf.reduce_mean(losses, name=name+'/loss_op')
         summarys.append(tf.summary.scalar(name+'/loss', loss_op))
-        decoded_annotations = tf.argmax(annotations, self.channel_axis)
-        decoded_predictions = tf.argmax(predictions, self.channel_axis)
+        decoded_annotations = tf.expand_dims(tf.argmax(annotations, self.channel_axis), -1)
+        decoded_predictions = tf.expand_dims(tf.argmax(predictions, self.channel_axis), -1)
         correct_prediction = tf.equal(
             decoded_annotations, decoded_predictions,
             name=name+'/correct_pred')
