@@ -83,7 +83,7 @@ class DilatedPixelCNN(object):
         summarys.append(tf.summary.scalar(name+'/m_iou', m_iou))
         if name == 'valid':
             summarys.append(tf.summary.image(
-                name+'/input', inputs, tf.float32, max_outputs=100))
+                name+'/input', inputs, max_outputs=100))
             summarys.append(tf.summary.image(
                 name+'/annotation', tf.cast(decoded_annotations, tf.float32), max_outputs=100))
             summarys.append(tf.summary.image(
