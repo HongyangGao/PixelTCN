@@ -78,9 +78,9 @@ class DilatedPixelCNN(object):
         accuracy_summary = tf.summary.scalar(name+'/accuracy', accuracy_op)
         m_iou, update_op = tf.contrib.metrics.streaming_mean_iou(
             predictions, annotations, self.conf.class_num, name=name+'/m_iou')
-        tf.summary.scalar(name+'/m_iou', m_iou)
+        m_iou_summary = tf.summary.scalar(name+'/m_iou', m_iou)
         summary = tf.summary.merge(
-            [accuracy_summary, loss_summary])
+            [accuracy_summary, loss_summary, m_iou_summary])
         return predictions, loss_op, summary
 
     def inference(self, inputs):
