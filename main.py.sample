@@ -7,21 +7,22 @@ from network import DilatedPixelCNN
 def configure():
     # training
     flags = tf.app.flags
-    flags.DEFINE_integer('max_epoch', 20, '# of step in an epoch')
+    flags.DEFINE_integer('max_epoch', 2, '# of step in an epoch')
     flags.DEFINE_integer('test_step', 100, '# of step to test a model')
     flags.DEFINE_integer('save_step', 1000, '# of step to save a model')
     flags.DEFINE_integer('summary_step', 1, '# of step to save the summary')
     flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
     flags.DEFINE_float('keep_prob', 0.9, 'dropout probability')
+    flags.DEFINE_boolean('use_gpu', False, 'use GPU or not')
     # data
     flags.DEFINE_string('data_dir', './dataset', 'Name of data directory')
     flags.DEFINE_string('train_list', './dataset/train.txt', 'Training data')
     flags.DEFINE_string('valid_list', './dataset/val.txt', 'Training data')
     flags.DEFINE_string('sample_dir', 'samples', 'Sample directory')
-    flags.DEFINE_integer('batch', 20, 'batch size')
+    flags.DEFINE_integer('batch', 10, 'batch size')
     flags.DEFINE_integer('channel', 3, 'channel size')
-    flags.DEFINE_integer('height', 240, 'height size')
-    flags.DEFINE_integer('width', 240, 'width size')
+    flags.DEFINE_integer('height', 256, 'height size')
+    flags.DEFINE_integer('width', 256, 'width size')
     # Debug
     flags.DEFINE_boolean('is_train', True, 'Training or testing')
     flags.DEFINE_string('log_level', 'INFO', 'Log level')
@@ -34,7 +35,6 @@ def configure():
     flags.DEFINE_integer('network_depth', 5, 'network depth for U-Net')
     flags.DEFINE_integer('class_num', 21, 'output class number')
     flags.DEFINE_integer('start_channel_num', 64, 'start number of outputs')
-    flags.DEFINE_boolean('use_gpu', False, 'use GPU or not')
     flags.FLAGS.__dict__['__parsed'] = False
     return flags.FLAGS
 
@@ -42,8 +42,6 @@ def configure():
 def main(_):
     model = DilatedPixelCNN(tf.Session(), configure())
     model.train()
-    # writer = tf.summary.FileWriter('./my_graph', sess.graph)
-    # writer.close()
 
 
 if __name__ == '__main__':

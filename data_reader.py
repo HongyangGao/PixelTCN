@@ -4,9 +4,9 @@ import tensorflow as tf
 class BatchDataReader(object):
 
     def __init__(self, sess, data_dir, data_list, input_size, class_num,
-                 data_format):
+                 name, data_format):
         self.sess = sess
-        self.scope = 'data_reader'
+        self.scope = name + '/data_reader'
         self.class_num = class_num
         self.channel_axis = 3
         images, labels = self.read_data(data_dir, data_list)
