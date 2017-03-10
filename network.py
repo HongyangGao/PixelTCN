@@ -34,10 +34,10 @@ class DilatedPixelCNN(object):
     def configure_networks(self):
         self.train_reader, self.valid_reader = self.get_data_readers()
         with tf.variable_scope('pixel_cnn') as scope:
-            self.train_preds, self.train_loss_op, self.train_summary = self.build_network(
+            self.train_preds, self.train_loss_op, self.train_miou, self.train_summary = self.build_network(
                 'train', self.train_reader)
             scope.reuse_variables()
-            self.valid_preds, self.valid_loss_op, self.valid_summary = self.build_network(
+            self.valid_preds, self.valid_loss_op, self.valid_miou, self.valid_summary = self.build_network(
                 'valid', self.valid_reader)
         optimizer = tf.train.AdamOptimizer(self.conf.learning_rate)
         self.train_op = optimizer.minimize(
@@ -81,7 +81,7 @@ class DilatedPixelCNN(object):
         m_iou_summary = tf.summary.scalar(name+'/m_iou', m_iou)
         summary = tf.summary.merge(
             [accuracy_summary, loss_summary, m_iou_summary])
-        return predictions, loss_op, summary
+        return predictions, loss_op, update_op, summary
 
     def inference(self, inputs):
         outputs = inputs
@@ -147,16 +147,18 @@ class DilatedPixelCNN(object):
         self.valid_reader.start()
         for epoch_num in range(self.conf.max_epoch):
             if epoch_num % self.conf.test_step == 0:
-                loss, summary = self.sess.run(
-                    [self.valid_loss_op, self.valid_summary])
+                loss, _, summary = self.sess.run(
+                    [self.valid_loss_op, self.valid_miou, self.valid_summary])
                 self.save_summary(summary, epoch_num)
                 print('----testing loss', loss)
             elif epoch_num % self.conf.summary_step == 0:
-                loss, _, summary = self.sess.run(
-                    [self.train_loss_op, self.train_op, self.train_summary])
+                loss, _, _, summary = self.sess.run(
+                    [self.train_loss_op, self.train_op,
+                    self.train_miou, self.train_summary])
                 self.save_summary(summary, epoch_num)
             else:
-                loss, _ = self.sess.run([self.train_loss_op, self.train_op])
+                loss, _, _ = self.sess.run([
+                    self.train_loss_op, self.train_op, self.train_miou])
                 print('----training loss', loss)
             if epoch_num % self.conf.save_step == 0:
                 self.save(epoch_num)
