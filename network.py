@@ -72,9 +72,9 @@ class DilatedPixelCNN(object):
             tf.argmax(annotations, self.channel_axis),
             tf.argmax(predictions, self.channel_axis),
             name=name+'/correct_pred')
-        accuracy = tf.reduce_mean(
-            tf.cast(correct_prediction, tf.float32), name=name+'/accuracy')
-        accuracy_summary = tf.summary.scalar(name+'/accuracy', accuracy)
+        accuracy_op = tf.reduce_mean(
+            tf.cast(correct_prediction, tf.float32), name=name+'/accuracy_op')
+        accuracy_summary = tf.summary.scalar(name+'/accuracy', accuracy_op)
         # m_iou = tf.contrib.metrics.streaming_mean_iou(
         #     predictions, annotations, self.conf.class_num, name=name+'/m_iou')
         # tf.summary.scalar(name+'/m_iou', m_iou)

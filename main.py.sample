@@ -19,10 +19,10 @@ def configure():
     flags.DEFINE_string('train_list', './dataset/train.txt', 'Training data')
     flags.DEFINE_string('valid_list', './dataset/val.txt', 'Training data')
     flags.DEFINE_string('sample_dir', 'samples', 'Sample directory')
-    flags.DEFINE_integer('batch', 20, 'batch size')
+    flags.DEFINE_integer('batch', 10, 'batch size')
     flags.DEFINE_integer('channel', 3, 'channel size')
-    flags.DEFINE_integer('height', 240, 'height size')
-    flags.DEFINE_integer('width', 240, 'width size')
+    flags.DEFINE_integer('height', 256, 'height size')
+    flags.DEFINE_integer('width', 256, 'width size')
     # Debug
     flags.DEFINE_boolean('is_train', True, 'Training or testing')
     flags.DEFINE_string('log_level', 'INFO', 'Log level')
