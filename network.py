@@ -39,11 +39,12 @@ class DilatedPixelCNN(object):
             scope.reuse_variables()
             self.valid_preds, self.valid_loss_op, self.valid_summary = self.build_network(
                 'valid', self.valid_reader)
-            optimizer = tf.train.AdamOptimizer(self.conf.learning_rate)
+        optimizer = tf.train.AdamOptimizer(self.conf.learning_rate)
         self.train_op = optimizer.minimize(
             self.train_loss_op, name='global/train_op')
         tf.set_random_seed(self.conf.random_seed)
         self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.local_variables_initializer())
         trainable_vars = tf.trainable_variables()
         self.saver = tf.train.Saver(var_list=trainable_vars, max_to_keep=0)
         self.writer = tf.summary.FileWriter(self.conf.logdir, self.sess.graph)
@@ -75,9 +76,9 @@ class DilatedPixelCNN(object):
         accuracy_op = tf.reduce_mean(
             tf.cast(correct_prediction, tf.float32), name=name+'/accuracy_op')
         accuracy_summary = tf.summary.scalar(name+'/accuracy', accuracy_op)
-        # m_iou = tf.contrib.metrics.streaming_mean_iou(
-        #     predictions, annotations, self.conf.class_num, name=name+'/m_iou')
-        # tf.summary.scalar(name+'/m_iou', m_iou)
+        m_iou, update_op = tf.contrib.metrics.streaming_mean_iou(
+            predictions, annotations, self.conf.class_num, name=name+'/m_iou')
+        tf.summary.scalar(name+'/m_iou', m_iou)
         summary = tf.summary.merge(
             [accuracy_summary, loss_summary])
         return predictions, loss_op, summary
