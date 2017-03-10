@@ -9,7 +9,7 @@ def configure():
     flags = tf.app.flags
     flags.DEFINE_integer('max_epoch', 2, '# of step in an epoch')
     flags.DEFINE_integer('test_step', 100, '# of step to test a model')
-    flags.DEFINE_integer('save_step', 1000, '# of step to save a model')
+    flags.DEFINE_integer('save_step', 100, '# of step to save a model')
     flags.DEFINE_integer('summary_step', 1, '# of step to save the summary')
     flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
     flags.DEFINE_float('keep_prob', 0.9, 'dropout probability')
