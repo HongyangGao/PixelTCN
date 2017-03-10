@@ -63,24 +63,32 @@ class DilatedPixelCNN(object):
         return train_reader, valid_reader
 
     def build_network(self, name, data_reader):
+        summarys = []
         inputs, annotations = data_reader.next_batch(self.conf.batch)
         predictions = self.inference(inputs)
         losses = tf.losses.softmax_cross_entropy(
             annotations, predictions, scope=name+'/losses')
         loss_op = tf.reduce_mean(losses, name=name+'/loss_op')
-        loss_summary = tf.summary.scalar(name+'/loss', loss_op)
+        summarys.append(tf.summary.scalar(name+'/loss', loss_op))
+        decoded_annotations = tf.argmax(annotations, self.channel_axis)
+        decoded_predictions = tf.argmax(predictions, self.channel_axis)
         correct_prediction = tf.equal(
-            tf.argmax(annotations, self.channel_axis),
-            tf.argmax(predictions, self.channel_axis),
+            decoded_annotations, decoded_predictions,
             name=name+'/correct_pred')
         accuracy_op = tf.reduce_mean(
             tf.cast(correct_prediction, tf.float32), name=name+'/accuracy_op')
-        accuracy_summary = tf.summary.scalar(name+'/accuracy', accuracy_op)
+        summarys.append(tf.summary.scalar(name+'/accuracy', accuracy_op))
         m_iou, update_op = tf.contrib.metrics.streaming_mean_iou(
             predictions, annotations, self.conf.class_num, name=name+'/m_iou')
-        m_iou_summary = tf.summary.scalar(name+'/m_iou', m_iou)
-        summary = tf.summary.merge(
-            [accuracy_summary, loss_summary, m_iou_summary])
+        summarys.append(tf.summary.scalar(name+'/m_iou', m_iou))
+        if name == 'valid':
+            summarys.append(tf.summary.image(
+                name+'/input', inputs[0,:,:,:]))
+            summarys.append(tf.summary.image(
+                name+'/annotation', decoded_annotations[0,:,:,:]))
+            summarys.append(tf.summary.image(
+                name+'/prediction', decoded_predictions[0,:,:,:]))
+        summary = tf.summary.merge(summarys)
         return predictions, loss_op, update_op, summary
 
     def inference(self, inputs):
@@ -177,7 +185,6 @@ class DilatedPixelCNN(object):
         if self.conf.reload_step > 0:
             self.reload(self.conf.reload_step)
         dummy_annotations = np.empty(self.output_shape)
-        #feed_dict = {self.inputs: inputs, self.annotations: dummy_annotations}
         predictions = self.sess.run(self.predictions)
         return predictions
 
