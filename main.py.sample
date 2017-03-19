@@ -1,3 +1,4 @@
+
 import os
 import time
 import tensorflow as tf
@@ -7,7 +8,7 @@ from network import DilatedPixelCNN
 def configure():
     # training
     flags = tf.app.flags
-    flags.DEFINE_integer('max_epoch', 2, '# of step in an epoch')
+    flags.DEFINE_integer('max_epoch', 3, '# of step in an epoch')
     flags.DEFINE_integer('test_step', 100, '# of step to test a model')
     flags.DEFINE_integer('save_step', 100, '# of step to save a model')
     flags.DEFINE_integer('summary_step', 1, '# of step to save the summary')
