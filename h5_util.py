@@ -7,7 +7,7 @@ IMG_MEAN = np.array(
     (122.67891434, 116.66876762, 104.00698793), dtype=np.float32)  # RGB
 
 
-def read_images(data_dir, data_list):
+def read_images(data_list):
     with open(data_list, 'r') as f:
         data = [line.strip("\n").split(' ') for line in f]
     return data
@@ -21,7 +21,7 @@ def process_image(image, shape, resize_mode=Image.BILINEAR):
 
 
 def build_h5_dataset(data_dir, list_path, out_dir, shape, name, norm=False):
-    images = read_images(data_dir, list_path)
+    images = read_images(list_path)
     image_size = len(images)
     dataset = h5py.File(out_dir+name+'.h5', 'w')
     dataset.create_dataset('X', (image_size, *shape, 3), dtype='f')
@@ -48,4 +48,4 @@ if __name__ == '__main__':
         'testing': 'test.txt'
     }
     for name, list_path in data_files.items():
-        build_h5_dataset(data_dir, list_path, output_dir, shape, name)
+        build_h5_dataset(data_dir, list_dir+list_path, output_dir, shape, name)
