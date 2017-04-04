@@ -11,34 +11,23 @@ class DilatedPixelCNN(object):
         self.conf = conf
         self.conv_size = (3, 3)
         self.pool_size = (2, 2)
-        if conf.use_gpu:
-            self.data_format = 'NCHW'
-            self.axis, self.channel_axis = (2, 3), 1
-            self.input_shape = [
-                conf.batch, conf.channel, conf.height, conf.width]
-            self.output_shape = [
-                conf.batch, conf.class_num, conf.height, conf.width]
-        else:
-            self.data_format = 'NHWC'
-            self.axis, self.channel_axis = (1, 2), 3
-            self.input_shape = [
-                conf.batch, conf.height, conf.width, conf.channel]
-            self.output_shape = [
-                conf.batch, conf.height, conf.width, conf.class_num]
+        self.data_format = 'NHWC'
+        self.axis, self.channel_axis = (1, 2), 3
+        self.input_shape = [
+            conf.batch, conf.height, conf.width, conf.channel]
+        self.output_shape = [
+            conf.batch, conf.height, conf.width, conf.class_num]
         if not os.path.exists(conf.modeldir):
             os.makedirs(conf.modeldir)
         if not os.path.exists(conf.logdir):
             os.makedirs(conf.logdir)
         self.configure_networks()
+        self.train_summary = self.config_summary('train')
+        self.valid_summary = self.config_summary('valid')
 
     def configure_networks(self):
         self.train_reader, self.valid_reader = self.get_data_readers()
-        with tf.variable_scope('pixel_cnn') as scope:
-            self.train_preds, self.train_loss_op, self.train_miou, self.train_summary = self.build_network(
-                'train', self.train_reader)
-            scope.reuse_variables()
-            self.valid_preds, self.valid_loss_op, self.valid_miou, self.valid_summary = self.build_network(
-                'valid', self.valid_reader)
+        self.build_network()
         optimizer = tf.train.AdamOptimizer(self.conf.learning_rate)
         self.train_op = optimizer.minimize(
             self.train_loss_op, name='global/train_op')
@@ -63,33 +52,42 @@ class DilatedPixelCNN(object):
         return train_reader, valid_reader
 
     def build_network(self, name, data_reader):
-        summarys = []
-        inputs, annotations = data_reader.next_batch(self.conf.batch)
-        predictions = self.inference(inputs)
+        self.inputs = tf.placeholder(
+            tf.float32, self.input_shape, name='inputs')
+        self.annotations = tf.placeholder(
+            tf.float32, self.output_shape, name='annotations')
+        self.predictions = self.inference(inputs)
         losses = tf.losses.softmax_cross_entropy(
             annotations, predictions, scope=name+'/losses')
-        loss_op = tf.reduce_mean(losses, name=name+'/loss_op')
-        summarys.append(tf.summary.scalar(name+'/loss', loss_op))
-        decoded_annotations = tf.expand_dims(tf.argmax(annotations, self.channel_axis), -1)
-        decoded_predictions = tf.expand_dims(tf.argmax(predictions, self.channel_axis), -1)
+        self.loss_op = tf.reduce_mean(losses, name=name+'/loss_op')
+        decoded_annotations = tf.expand_dims(
+            tf.argmax(annotations, self.channel_axis), -1)
+        decoded_predictions = tf.expand_dims(
+            tf.argmax(predictions, self.channel_axis), -1)
         correct_prediction = tf.equal(
             decoded_annotations, decoded_predictions,
             name=name+'/correct_pred')
-        accuracy_op = tf.reduce_mean(
+        self.accuracy_op = tf.reduce_mean(
             tf.cast(correct_prediction, tf.float32), name=name+'/accuracy_op')
-        summarys.append(tf.summary.scalar(name+'/accuracy', accuracy_op))
-        m_iou, update_op = tf.contrib.metrics.streaming_mean_iou(
-            predictions, annotations, self.conf.class_num, name=name+'/m_iou')
-        summarys.append(tf.summary.scalar(name+'/m_iou', m_iou))
+        # m_iou, update_op = tf.contrib.metrics.streaming_mean_iou(
+        # predictions, annotations, self.conf.class_num, name=name+'/m_iou')
+
+    def config_summary(self, name):
+        summarys = []
+        summarys.append(tf.summary.scalar(name+'/loss', self.loss_op))
+        summarys.append(tf.summary.scalar(name+'/accuracy', self.accuracy_op))
+        # summarys.append(tf.summary.scalar(name+'/m_iou', m_iou))
         if name == 'valid':
             summarys.append(tf.summary.image(
                 name+'/input', inputs, max_outputs=100))
             summarys.append(tf.summary.image(
-                name+'/annotation', tf.cast(decoded_annotations, tf.float32), max_outputs=100))
+                name+'/annotation', tf.cast(decoded_annotations, tf.float32),
+                max_outputs=100))
             summarys.append(tf.summary.image(
-                name+'/prediction', tf.cast(decoded_predictions, tf.float32), max_outputs=100))
+                name+'/prediction', tf.cast(decoded_predictions, tf.float32),
+                max_outputs=100))
         summary = tf.summary.merge(summarys)
-        return predictions, loss_op, update_op, summary
+        return summary
 
     def inference(self, inputs):
         outputs = inputs
@@ -151,34 +149,38 @@ class DilatedPixelCNN(object):
     def train(self):
         if self.conf.reload_step > 0:
             self.reload(self.conf.reload_step)
-        self.train_reader.start()
-        self.valid_reader.start()
         for epoch_num in range(self.conf.max_epoch):
-            if epoch_num % self.conf.test_step == 0:
+            if epoch_num % self.conf.test_step == 1:
+                inputs, annotations = self.valid_reader.next_batch()
+                feed_dict = {self.inputs: inputs,
+                             self.annotations: annotations}
                 loss, _, summary = self.sess.run(
-                    [self.valid_loss_op, self.valid_miou, self.valid_summary])
+                    [self.loss_op, self.valid_miou, self.valid_summary],
+                    feed_dict=feed_dict)
                 self.save_summary(summary, epoch_num)
                 print('----testing loss', loss)
-            elif epoch_num % self.conf.summary_step == 0:
-                loss, _, _, summary = self.sess.run(
-                    [self.train_loss_op, self.train_op,
-                    self.train_miou, self.train_summary])
+            elif epoch_num % self.conf.summary_step == 1:
+                inputs, annotations = self.train_reader.next_batch()
+                loss, _, summary = self.sess.run(
+                    [self.loss_op, self.train_op, self.train_summary],
+                    feed_dict=feed_dict)
                 self.save_summary(summary, epoch_num)
             else:
-                loss, _, _ = self.sess.run([
-                    self.train_loss_op, self.train_op, self.train_miou])
+                inputs, annotations = self.train_reader.next_batch()
+                loss, _ = self.sess.run(
+                    [self.loss_op, self.train_op], feed_dict=feed_dict)
                 print('----training loss', loss)
-            if epoch_num % self.conf.save_step == 0:
+            if epoch_num % self.conf.save_step == 1:
                 self.save(epoch_num)
-        self.train_reader.close()
-        self.valid_reader.close()
 
     def save_summary(self, summary, step):
         print('---->summarying', step)
         self.writer.add_summary(summary, step)
 
-    def test(self, step):
-        print('---->testing', step)
+    def test(self):
+        print('---->testing', self.conf.reload_step)
+        if self.conf.reload_step > 0:
+            self.reload(self.conf.reload_step)
         pass
 
     def predict(self, inputs):
