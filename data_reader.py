@@ -1,4 +1,24 @@
+import h5py
+import random
 import tensorflow as tf
+import numpy as np
+
+
+class H5DataLoader(object):
+
+    def __init__(self, data_dir, subset, is_train=True):
+        self.is_train = is_train
+        data_file = h5py.File(data_dir + subset +'.h5', 'r')
+        self.images, self.labels = data_file['X'][()], data_file['Y'][()]
+        cur_index = 0
+
+    def next_batch(self, batch_size):
+        if self.is_train:
+            indexes = random.sample(range(self.images.shape[0]), batch_size)
+        else:
+            indexes = range(self.cur_index, cur_index+batch_size)
+            self.cur_index += len(indexes)
+        return self.images[indexes], self.labels[indexes]
 
 
 class BatchDataReader(object):
