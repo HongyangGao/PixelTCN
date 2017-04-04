@@ -22,12 +22,13 @@ def process_image(image, shape, resize_mode=Image.BILINEAR):
 
 def build_h5_dataset(data_dir, list_path, out_dir, shape, name, norm=False):
     images = read_images(list_path)
-    image_size = len(images)
+    images_size = len(images)
     dataset = h5py.File(out_dir+name+'.h5', 'w')
-    dataset.create_dataset('X', (image_size, *shape, 3), dtype='f')
-    dataset.create_dataset('Y', (image_size, *shape), dtype='f')
-
+    dataset.create_dataset('X', (image_sizes, *shape, 3), dtype='f')
+    dataset.create_dataset('Y', (image_sizes, *shape), dtype='f')
     for index, (image, label) in enumerate(images):
+        if index % 100 == 0:
+            print("Dealing ", name, index, images_size)
         image = process_image(data_dir+image, shape)
         label = process_image(data_dir+label, shape, Image.NEAREST)
         image -= IMG_MEAN
