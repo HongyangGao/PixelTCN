@@ -29,7 +29,7 @@ def build_h5_dataset(data_dir, list_path, out_dir, shape, name, norm=False):
 
     for index, (image, label) in enumerate(images):
         image = process_image(data_dir+image, shape)
-        label = process_image(label, shape, Image.NEAREST)
+        label = process_image(data_dir+label, shape, Image.NEAREST)
         image -= IMG_MEAN
         image = image / 255. if norm else image
         dataset['X'][index], dataset['Y'][index] = image, label
