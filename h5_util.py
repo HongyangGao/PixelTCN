@@ -39,9 +39,9 @@ def build_h5_dataset(data_dir, list_path, out_dir, shape, name, norm=False):
 
 if __name__ == '__main__':
     shape = (256, 256)
-    data_dir = '/tempspace/hyuan/DrSleep/VOC2012/VOCdevkit/VOC2012'
-    list_dir = '/tempspace/hyuan/DrSleep/VOC2012/VOCdevkit/VOC2012/dataset/'
-    output_dir = '/tempspace/hyuan/DrSleep/VOC2012/VOCdevkit/VOC2012/dataset/'
+    data_dir = './dataset'
+    list_dir = './dataset/'
+    output_dir = './dataset/'
 
     data_files = {
         'training': 'train.txt',

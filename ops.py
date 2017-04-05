@@ -2,28 +2,59 @@ import tensorflow as tf
 import numpy as np
 
 
-def conv2d(inputs, num_outputs, kernel_size, scope, d_format):
+def conv2d(inputs, num_outputs, kernel_size, scope, norm=True,
+           d_format='NHWC'):
     outputs = tf.contrib.layers.conv2d(
         inputs, num_outputs, kernel_size, scope=scope,
         data_format=d_format, activation_fn=None, biases_initializer=None)
-    return tf.contrib.layers.batch_norm(
-        outputs, decay=0.9, center=True, activation_fn=tf.nn.relu,
-        updates_collections=None, epsilon=1e-5, scope=scope+'/batch_norm',
-        data_format=d_format)
+    if norm:
+        outputs = tf.contrib.layers.batch_norm(
+            outputs, decay=0.9, center=True, activation_fn=tf.nn.relu,
+            updates_collections=None, epsilon=1e-5, scope=scope+'/batch_norm',
+            data_format=d_format)
+    else:
+        outputs = tf.nn.relu(outputs, name=scope+'/relu')
+    return outputs
 
 
-def pool2d(inputs, kernel_size, scope, data_format):
-    return tf.contrib.layers.max_pool2d(
-        inputs, kernel_size, scope=scope, padding='SAME',
-        data_format=data_format)
-
-
-def upsample_reconv(inputs, out_num, kernel_size, scope, axis, d_format):
+def co_conv2d(inputs, num_outputs, kernel_size, scope, norm=True,
+              d_format='NHWC'):
     pass
 
 
-def dilated_conv(inputs, out_num, kernel_size, scope, axis, d_format):
-    conv1 = conv2d(inputs, out_num, kernel_size, scope+'/conv1', d_format)
+def deconv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
+    outputs = tf.contrib.layers.conv2d_transpose(
+        inputs, out_num, kernel_size, scope=scope, stride=[2, 2],
+        data_format=d_format, activation_fn=None, biases_initializer=None)
+    return tf.contrib.layers.batch_norm(
+        outputs, decay=0.9, activation_fn=tf.nn.relu, updates_collections=None,
+        epsilon=1e-5, scope=scope+'/batch_norm', data_format=d_format)
+
+
+def co_dilated_conv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
+    axis = (d_format.index('H'), d_format.index('W'))
+    channel_axis = d_format.index('C')
+    conv1 = conv2d(inputs, out_num, kernel_size, scope+'/conv1', False)
+    conv1_concat = tf.concat(
+        [inputs, conv1], channel_axis, name=scope+'/concat1')
+    conv2 = conv2d(conv1_concat, out_num, kernel_size, scope+'/conv2', False)
+    conv2_concat = tf.concat(
+        [conv1_concat, conv2], channel_axis, name=scope+'/concat2')
+    conv3 = conv2d(conv2_concat, 2*out_num, kernel_size, scope+'/conv3', False)
+    conv4, conv5 = tf.split(conv3, 2, channel_axis, name=scope+'/split')
+    dialte1 = dilate_tensor(conv1, axis, 0, 0, scope+'/dialte1')
+    dialte2 = dilate_tensor(conv2, axis, 1, 1, scope+'/dialte2')
+    dialte3 = dilate_tensor(conv4, axis, 1, 0, scope+'/dialte3')
+    dialte4 = dilate_tensor(conv5, axis, 0, 1, scope+'/dialte4')
+    outputs = tf.add_n([dialte1, dialte2, dialte3, dialte4], scope+'/add')
+    return tf.contrib.layers.batch_norm(
+        outputs, decay=0.9, activation_fn=tf.nn.relu, updates_collections=None,
+        epsilon=1e-5, scope=scope+'/batch_norm', data_format=d_format)
+
+
+def dilated_conv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
+    axis = (d_format.index('H'), d_format.index('W'))
+    conv1 = conv2d(inputs, out_num, kernel_size, scope+'/conv1')
     dilated_inputs = dilate_tensor(inputs, axis, 0, 0, scope+'/dialte_inputs')
     dilated_conv1 = dilate_tensor(conv1, axis, 1, 1, scope+'/dialte_conv1')
     conv1 = tf.add(dilated_inputs, dilated_conv1, scope+'/add1')
@@ -66,3 +97,9 @@ def dilate_tensor(inputs, axis, row_shift, column_shift, scope):
     column_outputs = tf.stack(
         columns, axis=axis[1], name=scope+'/columnsstack')
     return column_outputs
+
+
+def pool2d(inputs, kernel_size, scope, data_format='NHWC'):
+    return tf.contrib.layers.max_pool2d(
+        inputs, kernel_size, scope=scope, padding='SAME',
+        data_format=data_format)
