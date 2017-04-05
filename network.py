@@ -47,24 +47,26 @@ class DilatedPixelCNN(object):
             tf.float32, self.input_shape, name='inputs')
         self.annotations = tf.placeholder(
             tf.int64, self.output_shape, name='annotations')
-        expand_annotations = tf.expand_dims(self.annotations, -1)
+        expand_annotations = tf.expand_dims(
+            self.annotations, -1, name='annotations/expand_dims')
         one_hot_annotations = tf.squeeze(
-            expand_annotations, axis=[self.channel_axis], name='squeeze')
+            expand_annotations, axis=[self.channel_axis],
+            name='annotations/squeeze')
         one_hot_annotations = tf.one_hot(
             one_hot_annotations, depth=self.conf.class_num,
-            axis=self.channel_axis, name='one_hot')
+            axis=self.channel_axis, name='annotations/one_hot')
         self.predictions = self.inference(self.inputs)
         losses = tf.losses.softmax_cross_entropy(
-            one_hot_annotations, self.predictions, scope='losses')
-        self.loss_op = tf.reduce_mean(losses, name='loss_op')
+            one_hot_annotations, self.predictions, scope='loss/losses')
+        self.loss_op = tf.reduce_mean(losses, name='loss/loss_op')
         self.decoded_predictions = tf.argmax(
-            self.predictions, self.channel_axis)
-        # import ipdb; ipdb.set_trace()
+            self.predictions, self.channel_axis, name='accuracy/decode_pred')
         correct_prediction = tf.equal(
             self.annotations, self.decoded_predictions,
-            name='correct_pred')
+            name='accuracy/correct_pred')
         self.accuracy_op = tf.reduce_mean(
-            tf.cast(correct_prediction, tf.float32), name='accuracy_op')
+            tf.cast(correct_prediction, tf.float32, name='accuracy/cast'),
+            name='accuracy/accuracy_op')
         # m_iou, update_op = tf.contrib.metrics.streaming_mean_iou(
         # predictions, annotations, self.conf.class_num, name=name+'/m_iou')
 
@@ -110,40 +112,33 @@ class DilatedPixelCNN(object):
         num_outputs = self.conf.start_channel_num if first else 2 * \
             inputs.shape[self.channel_axis].value
         conv1 = ops.conv2d(
-            inputs, num_outputs, self.conv_size, name+'/conv1',
-            self.data_format)
+            inputs, num_outputs, self.conv_size, name+'/conv1')
         conv2 = ops.conv2d(
-            conv1, num_outputs, self.conv_size, name+'/conv2',
-            self.data_format)
+            conv1, num_outputs, self.conv_size, name+'/conv2',)
         down_outputs.append(conv2)
         pool = ops.pool2d(
-            conv2, self.pool_size, name+'/pool', self.data_format)
+            conv2, self.pool_size, name+'/pool')
         return pool
 
     def construct_bottom_block(self, inputs, name):
         num_outputs = inputs.shape[self.channel_axis].value
         conv1 = ops.conv2d(
-            inputs, 2*num_outputs, self.conv_size, name+'/conv1',
-            self.data_format)
+            inputs, 2*num_outputs, self.conv_size, name+'/conv1')
         conv2 = ops.conv2d(
-            conv1, num_outputs, self.conv_size, name+'/conv2',
-            self.data_format)
+            conv1, num_outputs, self.conv_size, name+'/conv2')
         return conv2
 
     def construct_up_block(self, inputs, down_inputs, name, final=False):
         num_outputs = inputs.shape[self.channel_axis].value
         conv1 = self.deconv_func()(
-            inputs, num_outputs, self.conv_size, name+'/conv1',
-            self.axis, self.data_format)
+            inputs, num_outputs, self.conv_size, name+'/conv1')
         conv1 = tf.concat(
             [conv1, down_inputs], self.channel_axis, name=name+'/concat')
         conv2 = self.conv_func()(
-            conv1, num_outputs, self.conv_size, name+'/conv2',
-            self.data_format)
+            conv1, num_outputs, self.conv_size, name+'/conv2')
         num_outputs = self.conf.class_num if final else num_outputs/2
-        conv3 = self.conv_func()(
-            conv2, num_outputs, self.conv_size, name+'/conv3',
-            self.data_format)
+        conv3 = ops.conv2d(
+            conv2, num_outputs, self.conv_size, name+'/conv3')
         return conv3
 
     def deconv_func(self):
