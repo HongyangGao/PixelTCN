@@ -1,7 +1,7 @@
 import os
 import tensorflow as tf
 from data_reader import H5DataLoader
-from ops import conv2d, pool2d, dilated_conv
+import ops 
 
 
 class DilatedPixelCNN(object):
@@ -37,8 +37,10 @@ class DilatedPixelCNN(object):
         self.writer = tf.summary.FileWriter(self.conf.logdir, self.sess.graph)
 
     def get_data_readers(self):
-        self.train_reader = H5DataLoader(self.conf.data_dir+self.conf.train_data)
-        self.valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data)
+        self.train_reader = H5DataLoader(
+            self.conf.data_dir+self.conf.train_data)
+        self.valid_reader = H5DataLoader(
+            self.conf.data_dir+self.conf.valid_data)
 
     def build_network(self):
         self.inputs = tf.placeholder(
@@ -55,7 +57,8 @@ class DilatedPixelCNN(object):
         losses = tf.losses.softmax_cross_entropy(
             one_hot_annotations, self.predictions, scope='losses')
         self.loss_op = tf.reduce_mean(losses, name='loss_op')
-        self.decoded_predictions = tf.argmax(self.predictions, self.channel_axis)
+        self.decoded_predictions = tf.argmax(
+            self.predictions, self.channel_axis)
         # import ipdb; ipdb.set_trace()
         correct_prediction = tf.equal(
             self.annotations, self.decoded_predictions,
@@ -74,10 +77,14 @@ class DilatedPixelCNN(object):
             summarys.append(tf.summary.image(
                 name+'/input', self.inputs, max_outputs=100))
             summarys.append(tf.summary.image(
-                name+'/annotation', tf.cast(tf.expand_dims(self.annotations, -1), tf.float32),
+                name +
+                '/annotation', tf.cast(tf.expand_dims(
+                    self.annotations, -1), tf.float32),
                 max_outputs=100))
             summarys.append(tf.summary.image(
-                name+'/prediction', tf.cast(tf.expand_dims(self.decoded_predictions, -1), tf.float32),
+                name +
+                '/prediction', tf.cast(tf.expand_dims(
+                    self.decoded_predictions, -1), tf.float32),
                 max_outputs=100))
         summary = tf.summary.merge(summarys)
         return summary
@@ -102,42 +109,48 @@ class DilatedPixelCNN(object):
     def construct_down_block(self, inputs, name, down_outputs, first=False):
         num_outputs = self.conf.start_channel_num if first else 2 * \
             inputs.shape[self.channel_axis].value
-        conv1 = conv2d(
+        conv1 = ops.conv2d(
             inputs, num_outputs, self.conv_size, name+'/conv1',
             self.data_format)
-        conv2 = conv2d(
+        conv2 = ops.conv2d(
             conv1, num_outputs, self.conv_size, name+'/conv2',
             self.data_format)
         down_outputs.append(conv2)
-        pool = pool2d(
+        pool = ops.pool2d(
             conv2, self.pool_size, name+'/pool', self.data_format)
         return pool
 
     def construct_bottom_block(self, inputs, name):
         num_outputs = inputs.shape[self.channel_axis].value
-        conv1 = conv2d(
+        conv1 = ops.conv2d(
             inputs, 2*num_outputs, self.conv_size, name+'/conv1',
             self.data_format)
-        conv2 = conv2d(
+        conv2 = ops.conv2d(
             conv1, num_outputs, self.conv_size, name+'/conv2',
             self.data_format)
         return conv2
 
     def construct_up_block(self, inputs, down_inputs, name, final=False):
         num_outputs = inputs.shape[self.channel_axis].value
-        conv1 = dilated_conv(
+        conv1 = self.deconv_func()(
             inputs, num_outputs, self.conv_size, name+'/conv1',
             self.axis, self.data_format)
         conv1 = tf.concat(
             [conv1, down_inputs], self.channel_axis, name=name+'/concat')
-        conv2 = conv2d(
+        conv2 = self.conv_func()(
             conv1, num_outputs, self.conv_size, name+'/conv2',
             self.data_format)
         num_outputs = self.conf.class_num if final else num_outputs/2
-        conv3 = conv2d(
+        conv3 = self.conv_func()(
             conv2, num_outputs, self.conv_size, name+'/conv3',
             self.data_format)
         return conv3
+
+    def deconv_func(self):
+        return getattr(ops, self.conf.deconv_name)
+
+    def conv_func(self):
+        return getattr(ops, self.conf.conv_name)
 
     def save_summary(self, summary, step):
         print('---->summarizing', step)
@@ -148,7 +161,8 @@ class DilatedPixelCNN(object):
             self.reload(self.conf.reload_step)
         for epoch_num in range(self.conf.max_epoch):
             if epoch_num % self.conf.test_step == 1:
-                inputs, annotations = self.valid_reader.next_batch(self.conf.batch)
+                inputs, annotations = self.valid_reader.next_batch(
+                    self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
                 loss, summary = self.sess.run(
@@ -156,7 +170,8 @@ class DilatedPixelCNN(object):
                 self.save_summary(summary, epoch_num)
                 print('----testing loss', loss)
             elif epoch_num % self.conf.summary_step == 1:
-                inputs, annotations = self.train_reader.next_batch(self.conf.batch)
+                inputs, annotations = self.train_reader.next_batch(
+                    self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
                 loss, _, summary = self.sess.run(
@@ -164,7 +179,8 @@ class DilatedPixelCNN(object):
                     feed_dict=feed_dict)
                 self.save_summary(summary, epoch_num)
             else:
-                inputs, annotations = self.train_reader.next_batch(self.conf.batch)
+                inputs, annotations = self.train_reader.next_batch(
+                    self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
                 loss, _ = self.sess.run(
@@ -180,7 +196,8 @@ class DilatedPixelCNN(object):
         else:
             print("please set a reasonable reload_step")
             return
-        valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data, False)
+        valid_reader = H5DataLoader(
+            self.conf.data_dir+self.conf.valid_data, False)
         count = 0
         losses = []
         accuracies = []
@@ -190,7 +207,7 @@ class DilatedPixelCNN(object):
                 break
             feed_dict = {self.inputs: inputs, self.annotations: annotations}
             loss, accuracy = self.sess.run([self.loss_op, self.train_op],
-                feed_dict=feed_dict)
+                                           feed_dict=feed_dict)
 
     def predict(self, inputs, out_path):
         print('---->predicting', self.conf.reload_step)
@@ -199,14 +216,16 @@ class DilatedPixelCNN(object):
         else:
             print("please set a reasonable reload_step")
             return
-        test_reader = H5DataLoader(self.conf.data_dir+self.conf.test_data, False)
+        test_reader = H5DataLoader(
+            self.conf.data_dir+self.conf.test_data, False)
         predictions = []
         while True:
             inputs, annotations = self.valid_reader.next_batch(self.conf.batch)
             if not inputs:
                 break
             feed_dict = {self.inputs: inputs, self.annotations: annotations}
-            predictions.append(self.sess.run(self.predictions, feed_dict=feed_dict))
+            predictions.append(self.sess.run(
+                self.predictions, feed_dict=feed_dict))
         for prediction in predictions:
             pass
             # save predicted images

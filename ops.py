@@ -12,13 +12,15 @@ def conv2d(inputs, num_outputs, kernel_size, scope, d_format):
         data_format=d_format)
 
 
-def pool2d(inputs, kernel_size, scope, data_format):
-    return tf.contrib.layers.max_pool2d(
-        inputs, kernel_size, scope=scope, padding='SAME',
-        data_format=data_format)
+def co_conv2d(inputs, num_outputs, kernel_size, scope, d_format):
+    pass
 
 
-def upsample_reconv(inputs, out_num, kernel_size, scope, axis, d_format):
+def deconv(inputs, *args):
+    pass
+
+
+def co_dilated_conv(inputs, out_num, kernel_size, scope, axis, d_format):
     pass
 
 
@@ -66,3 +68,9 @@ def dilate_tensor(inputs, axis, row_shift, column_shift, scope):
     column_outputs = tf.stack(
         columns, axis=axis[1], name=scope+'/columnsstack')
     return column_outputs
+
+
+def pool2d(inputs, kernel_size, scope, data_format):
+    return tf.contrib.layers.max_pool2d(
+        inputs, kernel_size, scope=scope, padding='SAME',
+        data_format=data_format)

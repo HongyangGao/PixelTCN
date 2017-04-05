@@ -1,6 +1,27 @@
+import os
+import glob
 import h5py
 import random
 import tensorflow as tf
+from img_utils import get_images
+
+
+class FileDataReader(object):
+
+    def __init__(self, data_dir, input_height, input_width, height, width,
+                 batch_size):
+        self.data_dir = data_dir
+        self.input_height, self.input_width = input_height, input_width
+        self.height, self.width = height, width
+        self.batch_size = batch_size
+        self.image_files = glob.glob(data_dir+'*')
+
+    def next_batch(self, batch_size):
+        sample_files = np.random.choice(self.image_files, batch_size)
+        images = get_images(
+            sample_files, self.input_height, self.input_width,
+            self.height, self.width)
+        return images
 
 
 class H5DataLoader(object):
@@ -20,7 +41,7 @@ class H5DataLoader(object):
         return self.images[indexes], self.labels[indexes]
 
 
-class BatchDataReader(object):
+class QueueDataReader(object):
 
     def __init__(self, sess, data_dir, data_list, input_size, class_num,
                  name, data_format):
