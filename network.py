@@ -1,6 +1,6 @@
 import os
 import tensorflow as tf
-from data_reader import BatchDataReader
+from data_reader import H5DataLoader
 from ops import conv2d, pool2d, dilated_conv
 
 
@@ -15,8 +15,7 @@ class DilatedPixelCNN(object):
         self.axis, self.channel_axis = (1, 2), 3
         self.input_shape = [
             conf.batch, conf.height, conf.width, conf.channel]
-        self.output_shape = [
-            conf.batch, conf.height, conf.width, conf.class_num]
+        self.output_shape = [conf.batch, conf.height, conf.width]
         if not os.path.exists(conf.modeldir):
             os.makedirs(conf.modeldir)
         if not os.path.exists(conf.logdir):
@@ -26,49 +25,43 @@ class DilatedPixelCNN(object):
         self.valid_summary = self.config_summary('valid')
 
     def configure_networks(self):
-        self.train_reader, self.valid_reader = self.get_data_readers()
+        self.get_data_readers()
         self.build_network()
         optimizer = tf.train.AdamOptimizer(self.conf.learning_rate)
-        self.train_op = optimizer.minimize(
-            self.train_loss_op, name='global/train_op')
+        self.train_op = optimizer.minimize(self.loss_op, name='train_op')
         tf.set_random_seed(self.conf.random_seed)
         self.sess.run(tf.global_variables_initializer())
-        self.sess.run(tf.local_variables_initializer())
+        # self.sess.run(tf.local_variables_initializer())
         trainable_vars = tf.trainable_variables()
         self.saver = tf.train.Saver(var_list=trainable_vars, max_to_keep=0)
         self.writer = tf.summary.FileWriter(self.conf.logdir, self.sess.graph)
 
     def get_data_readers(self):
-        input_params = (
-            self.sess, self.conf.data_dir, self.conf.train_list,
-            (self.conf.height, self.conf.width), self.conf.class_num, 'train',
-            self.data_format)
-        train_reader = BatchDataReader(*input_params)
-        input_params = (
-            self.sess, self.conf.data_dir, self.conf.valid_list,
-            (self.conf.height, self.conf.width), self.conf.class_num, 'valid',
-            self.data_format)
-        valid_reader = BatchDataReader(*input_params)
-        return train_reader, valid_reader
+        self.train_reader = H5DataLoader(self.conf.data_dir+self.conf.train_data)
+        self.valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data)
 
-    def build_network(self, name, data_reader):
+    def build_network(self):
         self.inputs = tf.placeholder(
             tf.float32, self.input_shape, name='inputs')
         self.annotations = tf.placeholder(
-            tf.float32, self.output_shape, name='annotations')
-        self.predictions = self.inference(inputs)
+            tf.int64, self.output_shape, name='annotations')
+        expand_annotations = tf.expand_dims(self.annotations, -1)
+        one_hot_annotations = tf.squeeze(
+            expand_annotations, axis=[self.channel_axis], name='squeeze')
+        one_hot_annotations = tf.one_hot(
+            one_hot_annotations, depth=self.conf.class_num,
+            axis=self.channel_axis, name='one_hot')
+        self.predictions = self.inference(self.inputs)
         losses = tf.losses.softmax_cross_entropy(
-            annotations, predictions, scope=name+'/losses')
-        self.loss_op = tf.reduce_mean(losses, name=name+'/loss_op')
-        decoded_annotations = tf.expand_dims(
-            tf.argmax(annotations, self.channel_axis), -1)
-        decoded_predictions = tf.expand_dims(
-            tf.argmax(predictions, self.channel_axis), -1)
+            one_hot_annotations, self.predictions, scope='losses')
+        self.loss_op = tf.reduce_mean(losses, name='loss_op')
+        self.decoded_predictions = tf.argmax(self.predictions, self.channel_axis)
+        # import ipdb; ipdb.set_trace()
         correct_prediction = tf.equal(
-            decoded_annotations, decoded_predictions,
-            name=name+'/correct_pred')
+            self.annotations, self.decoded_predictions,
+            name='correct_pred')
         self.accuracy_op = tf.reduce_mean(
-            tf.cast(correct_prediction, tf.float32), name=name+'/accuracy_op')
+            tf.cast(correct_prediction, tf.float32), name='accuracy_op')
         # m_iou, update_op = tf.contrib.metrics.streaming_mean_iou(
         # predictions, annotations, self.conf.class_num, name=name+'/m_iou')
 
@@ -79,12 +72,12 @@ class DilatedPixelCNN(object):
         # summarys.append(tf.summary.scalar(name+'/m_iou', m_iou))
         if name == 'valid':
             summarys.append(tf.summary.image(
-                name+'/input', inputs, max_outputs=100))
+                name+'/input', self.inputs, max_outputs=100))
             summarys.append(tf.summary.image(
-                name+'/annotation', tf.cast(decoded_annotations, tf.float32),
+                name+'/annotation', tf.cast(tf.expand_dims(self.annotations, -1), tf.float32),
                 max_outputs=100))
             summarys.append(tf.summary.image(
-                name+'/prediction', tf.cast(decoded_predictions, tf.float32),
+                name+'/prediction', tf.cast(tf.expand_dims(self.decoded_predictions, -1), tf.float32),
                 max_outputs=100))
         summary = tf.summary.merge(summarys)
         return summary
@@ -111,10 +104,10 @@ class DilatedPixelCNN(object):
             inputs.shape[self.channel_axis].value
         conv1 = conv2d(
             inputs, num_outputs, self.conv_size, name+'/conv1',
-            self.conf.keep_prob, self.data_format)
+            self.data_format)
         conv2 = conv2d(
             conv1, num_outputs, self.conv_size, name+'/conv2',
-            self.conf.keep_prob, self.data_format)
+            self.data_format)
         down_outputs.append(conv2)
         pool = pool2d(
             conv2, self.pool_size, name+'/pool', self.data_format)
@@ -124,71 +117,99 @@ class DilatedPixelCNN(object):
         num_outputs = inputs.shape[self.channel_axis].value
         conv1 = conv2d(
             inputs, 2*num_outputs, self.conv_size, name+'/conv1',
-            self.conf.keep_prob, self.data_format)
+            self.data_format)
         conv2 = conv2d(
             conv1, num_outputs, self.conv_size, name+'/conv2',
-            self.conf.keep_prob, self.data_format)
+            self.data_format)
         return conv2
 
     def construct_up_block(self, inputs, down_inputs, name, final=False):
         num_outputs = inputs.shape[self.channel_axis].value
         conv1 = dilated_conv(
             inputs, num_outputs, self.conv_size, name+'/conv1',
-            self.axis, self.conf.keep_prob, self.data_format)
+            self.axis, self.data_format)
         conv1 = tf.concat(
             [conv1, down_inputs], self.channel_axis, name=name+'/concat')
         conv2 = conv2d(
             conv1, num_outputs, self.conv_size, name+'/conv2',
-            self.conf.keep_prob, self.data_format)
+            self.data_format)
         num_outputs = self.conf.class_num if final else num_outputs/2
         conv3 = conv2d(
             conv2, num_outputs, self.conv_size, name+'/conv3',
-            self.conf.keep_prob, self.data_format)
+            self.data_format)
         return conv3
+
+    def save_summary(self, summary, step):
+        print('---->summarizing', step)
+        self.writer.add_summary(summary, step)
 
     def train(self):
         if self.conf.reload_step > 0:
             self.reload(self.conf.reload_step)
         for epoch_num in range(self.conf.max_epoch):
             if epoch_num % self.conf.test_step == 1:
-                inputs, annotations = self.valid_reader.next_batch()
+                inputs, annotations = self.valid_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
-                loss, _, summary = self.sess.run(
-                    [self.loss_op, self.valid_miou, self.valid_summary],
-                    feed_dict=feed_dict)
+                loss, summary = self.sess.run(
+                    [self.loss_op, self.valid_summary], feed_dict=feed_dict)
                 self.save_summary(summary, epoch_num)
                 print('----testing loss', loss)
             elif epoch_num % self.conf.summary_step == 1:
-                inputs, annotations = self.train_reader.next_batch()
+                inputs, annotations = self.train_reader.next_batch(self.conf.batch)
+                feed_dict = {self.inputs: inputs,
+                             self.annotations: annotations}
                 loss, _, summary = self.sess.run(
                     [self.loss_op, self.train_op, self.train_summary],
                     feed_dict=feed_dict)
                 self.save_summary(summary, epoch_num)
             else:
-                inputs, annotations = self.train_reader.next_batch()
+                inputs, annotations = self.train_reader.next_batch(self.conf.batch)
+                feed_dict = {self.inputs: inputs,
+                             self.annotations: annotations}
                 loss, _ = self.sess.run(
                     [self.loss_op, self.train_op], feed_dict=feed_dict)
                 print('----training loss', loss)
             if epoch_num % self.conf.save_step == 1:
                 self.save(epoch_num)
 
-    def save_summary(self, summary, step):
-        print('---->summarying', step)
-        self.writer.add_summary(summary, step)
-
     def test(self):
         print('---->testing', self.conf.reload_step)
         if self.conf.reload_step > 0:
             self.reload(self.conf.reload_step)
-        pass
+        else:
+            print("please set a reasonable reload_step")
+            return
+        valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data, False)
+        count = 0
+        losses = []
+        accuracies = []
+        while True:
+            inputs, annotations = self.valid_reader.next_batch(self.conf.batch)
+            if not inputs:
+                break
+            feed_dict = {self.inputs: inputs, self.annotations: annotations}
+            loss, accuracy = self.sess.run([self.loss_op, self.train_op],
+                feed_dict=feed_dict)
 
-    def predict(self, inputs):
+    def predict(self, inputs, out_path):
+        print('---->predicting', self.conf.reload_step)
         if self.conf.reload_step > 0:
             self.reload(self.conf.reload_step)
-        dummy_annotations = np.empty(self.output_shape)
-        predictions = self.sess.run(self.predictions)
-        return predictions
+        else:
+            print("please set a reasonable reload_step")
+            return
+        test_reader = H5DataLoader(self.conf.data_dir+self.conf.test_data, False)
+        predictions = []
+        while True:
+            inputs, annotations = self.valid_reader.next_batch(self.conf.batch)
+            if not inputs:
+                break
+            feed_dict = {self.inputs: inputs, self.annotations: annotations}
+            predictions.append(self.sess.run(self.predictions, feed_dict=feed_dict))
+        for prediction in predictions:
+            pass
+            # save predicted images
 
     def save(self, step):
         print('---->saving', step)
