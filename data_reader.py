@@ -29,17 +29,26 @@ class H5DataLoader(object):
     def __init__(self, data_path, is_train=True):
         self.is_train = is_train
         data_file = h5py.File(data_path, 'r')
-        self.images, self.labels = data_file['X'][()], data_file['Y'][()]
+        self.images, self.labels = data_file['X'], data_file['Y']
+        self.gen_indexes()
+
+    def gen_indexes(self):
+        if self.is_train:
+            self.indexes = np.random.permutation(range(self.images.shape[0]))
+        else:
+            self.indexes = np.array(range(self.images.shape[0]))
         self.cur_index = 0
 
     def next_batch(self, batch_size):
-        if self.is_train:
-            indexes = random.sample(range(self.images.shape[0]), batch_size)
-        else:
-            next_index = min(self.cur_index+batch_size, self.images.shape[0])
-            indexes = range(self.cur_index, next_index)
-            self.cur_index = next_index + 1
-        return self.images[indexes], self.labels[indexes]
+        next_index = self.cur_index+batch_size
+        cur_indexes = list(self.indexes[self.cur_index:next_index])
+        self.cur_index = next_index
+        if len(cur_indexes) < batch_size and self.is_train:
+            self.gen_indexes()
+            self.cur_index = batch_size-len(cur_indexes)
+            cur_indexes += list(self.indexes[:batch_size-len(indexes)])
+        cur_indexes.sort()
+        return self.images[cur_indexes], self.labels[cur_indexes]
 
 
 class QueueDataReader(object):
