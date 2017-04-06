@@ -1,8 +1,8 @@
-import os
 import glob
 import h5py
 import random
 import tensorflow as tf
+import numpy as np
 from img_utils import get_images
 
 
@@ -36,8 +36,9 @@ class H5DataLoader(object):
         if self.is_train:
             indexes = random.sample(range(self.images.shape[0]), batch_size)
         else:
-            indexes = range(self.cur_index, self.cur_index+batch_size)
-            self.cur_index += len(indexes)
+            next_index = min(self.cur_index+batch_size, self.images.shape[0])
+            indexes = range(self.cur_index, next_index)
+            self.cur_index = next_index + 1
         return self.images[indexes], self.labels[indexes]
 
 

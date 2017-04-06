@@ -20,7 +20,7 @@ def configure():
     flags.DEFINE_string('train_data', 'training.h5', 'Training data')
     flags.DEFINE_string('valid_data', 'validation.h5', 'Validation data')
     flags.DEFINE_string('test_data', 'testing.h5', 'Testing data')
-    flags.DEFINE_string('sample_dir', 'samples', 'Sample directory')
+    flags.DEFINE_string('sample_dir', './samples/', 'Sample directory')
     flags.DEFINE_integer('batch', 2, 'batch size')
     flags.DEFINE_integer('channel', 3, 'channel size')
     flags.DEFINE_integer('height', 256, 'height size')
@@ -30,7 +30,7 @@ def configure():
     flags.DEFINE_string('logdir', './logdir', 'Log dir')
     flags.DEFINE_string('modeldir', './modeldir', 'Model dir')
     flags.DEFINE_string('model_name', 'model', 'Model file name')
-    flags.DEFINE_integer('reload_step', 0, 'Reload step')
+    flags.DEFINE_integer('reload_step', 1, 'Reload step')
     flags.DEFINE_integer('random_seed', int(time.time()), 'random seed')
     # network
     flags.DEFINE_integer('network_depth', 5, 'network depth for U-Net')
@@ -50,11 +50,11 @@ def main(_):
     parser.add_argument('--action', dest='action', type=str, default='train',
                         help='actions: train, test, or predict')
     args = parser.parse_args()
-    model = DilatedPixelCNN(tf.Session(), configure())
     if args.action not in ['train', 'test', 'predict']:
         print('invalid action: ', args.action)
         print("Please input a action: train, test, or predict")
     else:
+        model = DilatedPixelCNN(tf.Session(), configure())
         getattr(model, args.action)()
 
 

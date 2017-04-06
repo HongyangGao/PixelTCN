@@ -17,9 +17,13 @@ def conv2d(inputs, num_outputs, kernel_size, scope, norm=True,
     return outputs
 
 
-def co_conv2d(inputs, num_outputs, kernel_size, scope, norm=True,
+def co_conv2d(inputs, out_num, kernel_size, scope, norm=True,
               d_format='NHWC'):
-    pass
+    conv1 = tf.contrib.layers.conv2d(
+        inputs, out_num, kernel_size, stride=2, scope=scope+'/conv0',
+        data_format=d_format, activation_fn=None, biases_initializer=None)
+    outputs = dilated_conv(conv1, out_num, kernel_size, scope)
+    return outputs
 
 
 def deconv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
@@ -54,7 +58,7 @@ def co_dilated_conv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
 
 def dilated_conv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
     axis = (d_format.index('H'), d_format.index('W'))
-    conv1 = conv2d(inputs, out_num, kernel_size, scope+'/conv1')
+    conv1 = conv2d(inputs, out_num, kernel_size, scope+'/conv1', False)
     dilated_inputs = dilate_tensor(inputs, axis, 0, 0, scope+'/dialte_inputs')
     dilated_conv1 = dilate_tensor(conv1, axis, 1, 1, scope+'/dialte_conv1')
     conv1 = tf.add(dilated_inputs, dilated_conv1, scope+'/add1')
