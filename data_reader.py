@@ -1,7 +1,57 @@
+import glob
+import h5py
+import random
 import tensorflow as tf
+import numpy as np
+from img_utils import get_images
 
 
-class BatchDataReader(object):
+class FileDataReader(object):
+
+    def __init__(self, data_dir, input_height, input_width, height, width,
+                 batch_size):
+        self.data_dir = data_dir
+        self.input_height, self.input_width = input_height, input_width
+        self.height, self.width = height, width
+        self.batch_size = batch_size
+        self.image_files = glob.glob(data_dir+'*')
+
+    def next_batch(self, batch_size):
+        sample_files = np.random.choice(self.image_files, batch_size)
+        images = get_images(
+            sample_files, self.input_height, self.input_width,
+            self.height, self.width)
+        return images
+
+
+class H5DataLoader(object):
+
+    def __init__(self, data_path, is_train=True):
+        self.is_train = is_train
+        data_file = h5py.File(data_path, 'r')
+        self.images, self.labels = data_file['X'], data_file['Y']
+        self.gen_indexes()
+
+    def gen_indexes(self):
+        if self.is_train:
+            self.indexes = np.random.permutation(range(self.images.shape[0]))
+        else:
+            self.indexes = np.array(range(self.images.shape[0]))
+        self.cur_index = 0
+
+    def next_batch(self, batch_size):
+        next_index = self.cur_index+batch_size
+        cur_indexes = list(self.indexes[self.cur_index:next_index])
+        self.cur_index = next_index
+        if len(cur_indexes) < batch_size and self.is_train:
+            self.gen_indexes()
+            self.cur_index = batch_size-len(cur_indexes)
+            cur_indexes += list(self.indexes[:batch_size-len(indexes)])
+        cur_indexes.sort()
+        return self.images[cur_indexes], self.labels[cur_indexes]
+
+
+class QueueDataReader(object):
 
     def __init__(self, sess, data_dir, data_list, input_size, class_num,
                  name, data_format):
@@ -22,11 +72,6 @@ class BatchDataReader(object):
             [self.image, self.label], batch_size=batch_size,
             num_threads=4, capacity=50000, min_after_dequeue=10000,
             name=self.scope+'/batch')
-        label_batch = tf.squeeze(
-            label_batch, axis=[self.channel_axis], name=self.scope+'/squeeze')
-        label_batch = tf.one_hot(
-            label_batch, depth=self.class_num, axis=self.channel_axis,
-            name=self.scope+'/one_hot')
         return image_batch, label_batch
 
     def read_dataset(self, queue, input_size, data_format):

@@ -3,4 +3,5 @@ __pycache__
 .DS_Store
 logdir/
 modeldir/
+samples/
 main.py
