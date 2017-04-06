@@ -1,5 +1,6 @@
 import numpy as np
 import h5py
+from progressbar import ProgressBar
 from PIL import Image
 
 # BGR: (104.00698793,116.66876762,122.67891434)
@@ -26,9 +27,8 @@ def build_h5_dataset(data_dir, list_path, out_dir, shape, name, norm=False):
     dataset = h5py.File(out_dir+name+'.h5', 'w')
     dataset.create_dataset('X', (images_size, *shape, 3), dtype='f')
     dataset.create_dataset('Y', (images_size, *shape), dtype='f')
-    for index, (image, label) in enumerate(images):
-        if index % 100 == 0:
-            print("Dealing ", name, index, images_size)
+    pbar = ProgressBar()
+    for index, (image, label) in pbar(enumerate(images)):
         image = process_image(data_dir+image, shape)
         label = process_image(data_dir+label, shape, Image.NEAREST)
         image -= IMG_MEAN
