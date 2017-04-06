@@ -1,7 +1,9 @@
 import os
+import numpy as np
 import tensorflow as tf
 from data_reader import H5DataLoader
-import ops 
+from img_utils import imsave
+import ops
 
 
 class DilatedPixelCNN(object):
@@ -20,27 +22,21 @@ class DilatedPixelCNN(object):
             os.makedirs(conf.modeldir)
         if not os.path.exists(conf.logdir):
             os.makedirs(conf.logdir)
+        if not os.path.exists(conf.sample_dir):
+            os.makedirs(conf.sample_dir)
         self.configure_networks()
         self.train_summary = self.config_summary('train')
         self.valid_summary = self.config_summary('valid')
 
     def configure_networks(self):
-        self.get_data_readers()
         self.build_network()
         optimizer = tf.train.AdamOptimizer(self.conf.learning_rate)
         self.train_op = optimizer.minimize(self.loss_op, name='train_op')
         tf.set_random_seed(self.conf.random_seed)
         self.sess.run(tf.global_variables_initializer())
-        # self.sess.run(tf.local_variables_initializer())
         trainable_vars = tf.trainable_variables()
         self.saver = tf.train.Saver(var_list=trainable_vars, max_to_keep=0)
         self.writer = tf.summary.FileWriter(self.conf.logdir, self.sess.graph)
-
-    def get_data_readers(self):
-        self.train_reader = H5DataLoader(
-            self.conf.data_dir+self.conf.train_data)
-        self.valid_reader = H5DataLoader(
-            self.conf.data_dir+self.conf.valid_data)
 
     def build_network(self):
         self.inputs = tf.placeholder(
@@ -67,14 +63,14 @@ class DilatedPixelCNN(object):
         self.accuracy_op = tf.reduce_mean(
             tf.cast(correct_prediction, tf.float32, name='accuracy/cast'),
             name='accuracy/accuracy_op')
-        # m_iou, update_op = tf.contrib.metrics.streaming_mean_iou(
-        # predictions, annotations, self.conf.class_num, name=name+'/m_iou')
+        self.m_iou, self.miou_op = tf.contrib.metrics.streaming_mean_iou(
+            self.decoded_predictions, self.annotations, self.conf.class_num,
+            name='m_iou')
 
     def config_summary(self, name):
         summarys = []
         summarys.append(tf.summary.scalar(name+'/loss', self.loss_op))
         summarys.append(tf.summary.scalar(name+'/accuracy', self.accuracy_op))
-        # summarys.append(tf.summary.scalar(name+'/m_iou', m_iou))
         if name == 'valid':
             summarys.append(tf.summary.image(
                 name+'/input', self.inputs, max_outputs=100))
@@ -154,10 +150,11 @@ class DilatedPixelCNN(object):
     def train(self):
         if self.conf.reload_step > 0:
             self.reload(self.conf.reload_step)
+        train_reader = H5DataLoader(self.conf.data_dir+self.conf.train_data)
+        valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data)
         for epoch_num in range(self.conf.max_epoch):
             if epoch_num % self.conf.test_step == 1:
-                inputs, annotations = self.valid_reader.next_batch(
-                    self.conf.batch)
+                inputs, annotations = valid_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
                 loss, summary = self.sess.run(
@@ -165,8 +162,7 @@ class DilatedPixelCNN(object):
                 self.save_summary(summary, epoch_num)
                 print('----testing loss', loss)
             elif epoch_num % self.conf.summary_step == 1:
-                inputs, annotations = self.train_reader.next_batch(
-                    self.conf.batch)
+                inputs, annotations = train_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
                 loss, _, summary = self.sess.run(
@@ -174,8 +170,7 @@ class DilatedPixelCNN(object):
                     feed_dict=feed_dict)
                 self.save_summary(summary, epoch_num)
             else:
-                inputs, annotations = self.train_reader.next_batch(
-                    self.conf.batch)
+                inputs, annotations = train_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
                 loss, _ = self.sess.run(
@@ -193,18 +188,29 @@ class DilatedPixelCNN(object):
             return
         valid_reader = H5DataLoader(
             self.conf.data_dir+self.conf.valid_data, False)
+        self.sess.run(tf.local_variables_initializer())
         count = 0
         losses = []
         accuracies = []
+        m_ious = []
         while True:
-            inputs, annotations = self.valid_reader.next_batch(self.conf.batch)
-            if not inputs:
+            inputs, annotations = valid_reader.next_batch(self.conf.batch)
+            if inputs.shape[0] < self.conf.batch:
                 break
             feed_dict = {self.inputs: inputs, self.annotations: annotations}
-            loss, accuracy = self.sess.run([self.loss_op, self.train_op],
-                                           feed_dict=feed_dict)
+            loss, accuracy, m_iou, _ = self.sess.run(
+                [self.loss_op, self.accuracy_op, self.m_iou, self.miou_op],
+                feed_dict=feed_dict)
+            print('values----->', loss, accuracy, m_iou)
+            count += 1
+            losses.append(loss)
+            accuracies.append(accuracy)
+            m_ious.append(m_iou)
+        print('Loss: ', np.mean(losses))
+        print('Accuracy: ', np.mean(accuracies))
+        print('M_iou: ', m_ious[-1])
 
-    def predict(self, inputs, out_path):
+    def predict(self):
         print('---->predicting', self.conf.reload_step)
         if self.conf.reload_step > 0:
             self.reload(self.conf.reload_step)
@@ -215,15 +221,17 @@ class DilatedPixelCNN(object):
             self.conf.data_dir+self.conf.test_data, False)
         predictions = []
         while True:
-            inputs, annotations = self.valid_reader.next_batch(self.conf.batch)
-            if not inputs:
+            inputs, annotations = test_reader.next_batch(self.conf.batch)
+            if inputs.shape[0] < self.conf.batch:
                 break
             feed_dict = {self.inputs: inputs, self.annotations: annotations}
             predictions.append(self.sess.run(
-                self.predictions, feed_dict=feed_dict))
-        for prediction in predictions:
-            pass
-            # save predicted images
+                self.decoded_predictions, feed_dict=feed_dict))
+        print('----->saving predictions')
+        for index, prediction in enumerate(predictions):
+            for i in range(prediction.shape[0]):
+                imsave(prediction[i], self.conf.sample_dir +
+                       str(index*prediction.shape[0]+i)+'.png')
 
     def save(self, step):
         print('---->saving', step)
@@ -232,9 +240,10 @@ class DilatedPixelCNN(object):
         self.saver.save(self.sess, checkpoint_path, global_step=step)
 
     def reload(self, step):
-        checkpoint_path = os.path.join(conf.modeldir, conf.model_name)
+        checkpoint_path = os.path.join(
+            self.conf.modeldir, self.conf.model_name)
         model_path = checkpoint_path+'-'+str(step)
-        if not os.path.exists(model_path):
-            print('------- no such checkpoint')
+        if not os.path.exists(model_path+'.meta'):
+            print('------- no such checkpoint', model_path)
             return
         self.saver.restore(self.sess, model_path)

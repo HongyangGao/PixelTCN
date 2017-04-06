@@ -24,6 +24,10 @@ def imread(path, is_grayscale=False):
     return scipy.misc.imread(path).astype(np.float)
 
 
+def imsave(image, path):
+    scipy.misc.imsave(path, image)
+
+
 def get_images(paths, pre_height, pre_width, height, width,
                is_crop=False, is_grayscale=False):
     images = []
