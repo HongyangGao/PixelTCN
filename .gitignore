@@ -1,7 +1,7 @@
 __pycache__
 *.pyc
 .DS_Store
-logdir/
-modeldir/
-samples/
-main.py
+logdir*
+modeldir*
+samples*
+main*.py
