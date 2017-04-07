@@ -1,6 +1,5 @@
 import glob
 import h5py
-import random
 import tensorflow as tf
 import numpy as np
 from img_utils import get_images
@@ -46,7 +45,7 @@ class H5DataLoader(object):
         if len(cur_indexes) < batch_size and self.is_train:
             self.gen_indexes()
             self.cur_index = batch_size-len(cur_indexes)
-            cur_indexes += list(self.indexes[:batch_size-len(indexes)])
+            cur_indexes += list(self.indexes[:batch_size-len(cur_indexes)])
         cur_indexes.sort()
         return self.images[cur_indexes], self.labels[cur_indexes]
 
