@@ -148,8 +148,8 @@ class DilatedPixelCNN(object):
         self.writer.add_summary(summary, step)
 
     def train(self):
-        if self.conf.reload_step > 0:
-            self.reload(self.conf.reload_step)
+        if self.conf.reload_epoch > 0:
+            self.reload(self.conf.reload_epoch)
         train_reader = H5DataLoader(self.conf.data_dir+self.conf.train_data)
         valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data)
         for epoch_num in range(self.conf.max_epoch):
@@ -180,11 +180,11 @@ class DilatedPixelCNN(object):
                 self.save(epoch_num)
 
     def test(self):
-        print('---->testing ', self.conf.test_step)
-        if self.conf.test_step > 0:
-            self.reload(self.conf.test_step)
+        print('---->testing ', self.conf.test_epoch)
+        if self.conf.test_epoch > 0:
+            self.reload(self.conf.test_epoch)
         else:
-            print("please set a reasonable test_step")
+            print("please set a reasonable test_epoch")
             return
         valid_reader = H5DataLoader(
             self.conf.data_dir+self.conf.valid_data, False)
@@ -211,11 +211,11 @@ class DilatedPixelCNN(object):
         print('M_iou: ', m_ious[-1])
 
     def predict(self):
-        print('---->predicting ', self.conf.test_step)
-        if self.conf.test_step > 0:
-            self.reload(self.conf.test_step)
+        print('---->predicting ', self.conf.test_epoch)
+        if self.conf.test_epoch > 0:
+            self.reload(self.conf.test_epoch)
         else:
-            print("please set a reasonable test_step")
+            print("please set a reasonable test_epoch")
             return
         test_reader = H5DataLoader(
             self.conf.data_dir+self.conf.test_data, False)
