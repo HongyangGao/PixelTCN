@@ -30,6 +30,7 @@ def configure():
     flags.DEFINE_string('sample_dir', './samples/', 'Sample directory')
     flags.DEFINE_string('model_name', 'model', 'Model file name')
     flags.DEFINE_integer('reload_step', 0, 'Reload step')
+    flags.DEFINE_integer('test_step', 0, 'Test or predict step')
     flags.DEFINE_integer('random_seed', int(time.time()), 'random seed')
     # network
     flags.DEFINE_integer('network_depth', 5, 'network depth for U-Net')
