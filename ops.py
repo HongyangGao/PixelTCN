@@ -19,11 +19,31 @@ def conv2d(inputs, num_outputs, kernel_size, scope, norm=True,
 
 def co_conv2d(inputs, out_num, kernel_size, scope, norm=True,
               d_format='NHWC'):
+    axis = (d_format.index('H'), d_format.index('W'))
+    channel_axis = d_format.index('C')
     conv1 = tf.contrib.layers.conv2d(
-        inputs, out_num, kernel_size, stride=2, scope=scope+'/conv0',
+        inputs, out_num, kernel_size, stride=2, scope=scope+'/conv1',
         data_format=d_format, activation_fn=None, biases_initializer=None)
-    outputs = dilated_conv(conv1, out_num, kernel_size, scope)
-    return outputs
+    dialte1 = dilate_tensor(conv1, axis, 0, 0, scope+'/dialte1')
+    conv1_concat = tf.concat(
+        [inputs, dialte1], channel_axis, name=scope+'/concat1')
+    conv2 = tf.contrib.layers.conv2d(
+        conv1_concat, out_num, kernel_size, stride=2, scope=scope+'/conv2',
+        data_format=d_format, activation_fn=None, biases_initializer=None)
+    dialte2 = dilate_tensor(conv2, axis, 1, 1, scope+'/dialte2')
+    conv3 = tf.add_n([dialte1, dialte2], scope+'/add')
+    conv2_concat = tf.concat(
+        [inputs, conv3], channel_axis, name=scope+'/concat2')
+    conv4 = tf.contrib.layers.conv2d(
+        conv2_concat, 2*out_num, kernel_size, stride=2, scope=scope+'/conv4',
+        data_format=d_format, activation_fn=None, biases_initializer=None)
+    conv5, conv6 = tf.split(conv4, 2, channel_axis, name=scope+'/split')
+    dialte3 = dilate_tensor(conv5, axis, 1, 0, scope+'/dialte3')
+    dialte4 = dilate_tensor(conv6, axis, 0, 1, scope+'/dialte4')
+    outputs = tf.add_n([dialte1, dialte2, dialte3, dialte4], scope+'/add')
+    return tf.contrib.layers.batch_norm(
+        outputs, decay=0.9, activation_fn=tf.nn.relu, updates_collections=None,
+        epsilon=1e-5, scope=scope+'/batch_norm', data_format=d_format)
 
 
 def deconv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
