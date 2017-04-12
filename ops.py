@@ -25,21 +25,28 @@ def co_conv2d(inputs, out_num, kernel_size, scope, norm=True,
         inputs, out_num, kernel_size, stride=2, scope=scope+'/conv1',
         data_format=d_format, activation_fn=None, biases_initializer=None)
     dialte1 = dilate_tensor(conv1, axis, 0, 0, scope+'/dialte1')
+    shifted_inputs = shift_tensor(inputs, axis, 1, 1, scope+'/shift1')
     conv1_concat = tf.concat(
-        [inputs, dialte1], channel_axis, name=scope+'/concat1')
+        [shifted_inputs, dialte1], channel_axis, name=scope+'/concat1')
     conv2 = tf.contrib.layers.conv2d(
         conv1_concat, out_num, kernel_size, stride=2, scope=scope+'/conv2',
         data_format=d_format, activation_fn=None, biases_initializer=None)
     dialte2 = dilate_tensor(conv2, axis, 1, 1, scope+'/dialte2')
     conv3 = tf.add_n([dialte1, dialte2], scope+'/add')
+    shifted_inputs = shift_tensor(inputs, axis, 1, 0, scope+'/shift2')
     conv2_concat = tf.concat(
-        [inputs, conv3], channel_axis, name=scope+'/concat2')
+        [shifted_inputs, conv3], channel_axis, name=scope+'/concat2')
     conv4 = tf.contrib.layers.conv2d(
-        conv2_concat, 2*out_num, kernel_size, stride=2, scope=scope+'/conv4',
+        conv2_concat, out_num, kernel_size, stride=2, scope=scope+'/conv4',
         data_format=d_format, activation_fn=None, biases_initializer=None)
-    conv5, conv6 = tf.split(conv4, 2, channel_axis, name=scope+'/split')
-    dialte3 = dilate_tensor(conv5, axis, 1, 0, scope+'/dialte3')
-    dialte4 = dilate_tensor(conv6, axis, 0, 1, scope+'/dialte4')
+    dialte3 = dilate_tensor(conv4, axis, 1, 0, scope+'/dialte3')
+    shifted_inputs = shift_tensor(inputs, axis, 0, 1, scope+'/shift3')
+    conv2_concat = tf.concat(
+        [shifted_inputs, conv3], channel_axis, name=scope+'/concat3')
+    conv5 = tf.contrib.layers.conv2d(
+        conv2_concat, out_num, kernel_size, stride=2, scope=scope+'/conv5',
+        data_format=d_format, activation_fn=None, biases_initializer=None)
+    dialte4 = dilate_tensor(conv5, axis, 0, 1, scope+'/dialte4')
     outputs = tf.add_n([dialte1, dialte2, dialte3, dialte4], scope+'/add')
     return tf.contrib.layers.batch_norm(
         outputs, decay=0.9, activation_fn=tf.nn.relu, updates_collections=None,
@@ -105,22 +112,38 @@ def get_mask(shape, scope):
     return tf.constant(mask, dtype=tf.float32, name=scope+'/mask')
 
 
+def shift_tensor(inputs, axis, row_shift, column_shift, scope):
+    if row_shift:
+        rows = tf.unstack(inputs, axis=axis[0], name=scope+'/rowsunstack')
+        row_zeros = tf.zeros_like(rows[0], dtype=tf.float32, name=scope+'/rowzeros')
+        rows = rows[row_shift:] + [row_zeros]*row_shift
+        inputs = tf.stack(rows, axis=axis[0], name=scope+'/rowsstack')
+    if column_shift:
+        columns = tf.unstack(
+            inputs, axis=axis[1], name=scope+'/columnsunstack')
+        columns_zeros = tf.zeros_like(
+        columns[0], dtype=tf.float32, name=scope+'/columnzeros')
+        columns = columns[column_shift:] + [columns_zeros]*column_shift
+        inputs = tf.stack(columns, axis=axis[1], name=scope+'/columnsstack')
+    return inputs
+
+
 def dilate_tensor(inputs, axis, row_shift, column_shift, scope):
     rows = tf.unstack(inputs, axis=axis[0], name=scope+'/rowsunstack')
-    row_zeros = tf.zeros(
-        rows[0].shape, dtype=tf.float32, name=scope+'/rowzeros')
+    row_zeros = tf.zeros_like(
+        rows[0], dtype=tf.float32, name=scope+'/rowzeros')
     for index in range(len(rows), 0, -1):
         rows.insert(index-row_shift, row_zeros)
-    row_outputs = tf.stack(rows, axis=axis[0], name=scope+'/rowsstack')
+    inputs = tf.stack(rows, axis=axis[0], name=scope+'/rowsstack')
     columns = tf.unstack(
-        row_outputs, axis=axis[1], name=scope+'/columnsunstack')
-    columns_zeros = tf.zeros(
-        columns[0].shape, dtype=tf.float32, name=scope+'/columnzeros')
+        inputs, axis=axis[1], name=scope+'/columnsunstack')
+    columns_zeros = tf.zeros_like(
+        columns[0], dtype=tf.float32, name=scope+'/columnzeros')
     for index in range(len(columns), 0, -1):
         columns.insert(index-column_shift, columns_zeros)
-    column_outputs = tf.stack(
+    inputs = tf.stack(
         columns, axis=axis[1], name=scope+'/columnsstack')
-    return column_outputs
+    return inputs
 
 
 def pool2d(inputs, kernel_size, scope, data_format='NHWC'):
