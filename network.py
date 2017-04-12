@@ -69,8 +69,8 @@ class DilatedPixelCNN(object):
         weights = tf.cast(
             tf.greater(self.decoded_predictions, 0, name='m_iou/greater'),
             tf.int32, name='m_iou/weights')
-        self.m_iou, self.miou_op = tf.contrib.metrics.streaming_mean_iou(
-            self.decoded_predictions, self.annotations, self.conf.class_num,
+        self.m_iou, self.miou_op = tf.metrics.mean_iou(
+            self.annotations, self.decoded_predictions, self.conf.class_num,
             weights, name='m_iou/m_ious')
 
     def config_summary(self, name):
