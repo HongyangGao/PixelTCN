@@ -43,6 +43,10 @@ class DilatedPixelCNN(object):
             tf.float32, self.input_shape, name='inputs')
         self.annotations = tf.placeholder(
             tf.int64, self.output_shape, name='annotations')
+        self.predictions = self.inference(self.inputs)
+        self.cal_loss()
+
+    def cal_loss(self):
         expand_annotations = tf.expand_dims(
             self.annotations, -1, name='annotations/expand_dims')
         one_hot_annotations = tf.squeeze(
@@ -51,7 +55,6 @@ class DilatedPixelCNN(object):
         one_hot_annotations = tf.one_hot(
             one_hot_annotations, depth=self.conf.class_num,
             axis=self.channel_axis, name='annotations/one_hot')
-        self.predictions = self.inference(self.inputs)
         losses = tf.losses.softmax_cross_entropy(
             one_hot_annotations, self.predictions, scope='loss/losses')
         self.loss_op = tf.reduce_mean(losses, name='loss/loss_op')
@@ -63,9 +66,12 @@ class DilatedPixelCNN(object):
         self.accuracy_op = tf.reduce_mean(
             tf.cast(correct_prediction, tf.float32, name='accuracy/cast'),
             name='accuracy/accuracy_op')
+        weights = tf.cast(
+            tf.greater(self.decoded_predictions, 0, name='m_iou/greater'),
+            tf.int32, name='m_iou/weights')
         self.m_iou, self.miou_op = tf.contrib.metrics.streaming_mean_iou(
             self.decoded_predictions, self.annotations, self.conf.class_num,
-            name='m_iou')
+            weights, name='m_iou/m_ious')
 
     def config_summary(self, name):
         summarys = []
