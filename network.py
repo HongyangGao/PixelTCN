@@ -192,15 +192,15 @@ class DilatedPixelCNN(object):
         else:
             print("please set a reasonable test_epoch")
             return
-        valid_reader = H5DataLoader(
-            self.conf.data_dir+self.conf.valid_data, False)
+        test_reader = H5DataLoader(
+            self.conf.data_dir+self.conf.test_data, False)
         self.sess.run(tf.local_variables_initializer())
         count = 0
         losses = []
         accuracies = []
         m_ious = []
         while True:
-            inputs, annotations = valid_reader.next_batch(self.conf.batch)
+            inputs, annotations = test_reader.next_batch(self.conf.batch)
             if inputs.shape[0] < self.conf.batch:
                 break
             feed_dict = {self.inputs: inputs, self.annotations: annotations}
