@@ -165,7 +165,7 @@ class DilatedPixelCNN(object):
                              self.annotations: annotations}
                 loss, summary = self.sess.run(
                     [self.loss_op, self.valid_summary], feed_dict=feed_dict)
-                self.save_summary(summary, epoch_num)
+                self.save_summary(summary, epoch_num+self.conf.reload_epoch)
                 print('----testing loss', loss)
             elif epoch_num % self.conf.summary_step == 1:
                 inputs, annotations = train_reader.next_batch(self.conf.batch)
@@ -174,7 +174,7 @@ class DilatedPixelCNN(object):
                 loss, _, summary = self.sess.run(
                     [self.loss_op, self.train_op, self.train_summary],
                     feed_dict=feed_dict)
-                self.save_summary(summary, epoch_num)
+                self.save_summary(summary, epoch_num+self.conf.reload_epoch)
             else:
                 inputs, annotations = train_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
@@ -183,7 +183,7 @@ class DilatedPixelCNN(object):
                     [self.loss_op, self.train_op], feed_dict=feed_dict)
                 print('----training loss', loss)
             if epoch_num % self.conf.save_step == 1:
-                self.save(epoch_num)
+                self.save(epoch_num+self.conf.reload_epoch)
 
     def test(self):
         print('---->testing ', self.conf.test_epoch)
