@@ -46,8 +46,12 @@ class H5DataLoader(object):
             self.gen_indexes()
             self.cur_index = batch_size-len(cur_indexes)
             cur_indexes += list(self.indexes[:batch_size-len(cur_indexes)])
-        cur_indexes.sort()
-        return self.images[cur_indexes], self.labels[cur_indexes]
+        cur_indexes = sorted(set(cur_indexes))
+        try:
+            return self.images[cur_indexes], self.labels[cur_indexes]
+        except Exception as e:
+            print(e)
+            return np.empty(0), np.empty(0)
 
 
 class QueueDataReader(object):
