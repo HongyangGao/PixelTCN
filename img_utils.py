@@ -72,6 +72,7 @@ def compose_images(ids, folders):
     result_folder = './results/'
     if not os.path.exists(result_folder):
         os.makedirs(result_folder)
+    id_imgs = []
     for index in ids:
         imgs = []
         for folder in folders:
@@ -80,7 +81,10 @@ def compose_images(ids, folders):
             imgs.append(cur_img)
             imgs.append(np.ones([1]+list(cur_img.shape)[1:])*255)
         img = np.concatenate(imgs[:-1], axis=0)
-        scipy.misc.imsave(result_folder+str(index)+'.png', img)
+        id_imgs.append(img)
+        id_imgs.append(np.ones((img.shape[0], 1, img.shape[2]))*255)
+    id_img = np.concatenate(id_imgs[:-1], axis=1)
+    scipy.misc.imsave(result_folder+'result.png', id_img)
 
 if __name__ == '__main__':
     # folders = ['./images/', './labels/', './samples3/', './samples1/', './samples2/']
