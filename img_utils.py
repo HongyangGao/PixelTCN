@@ -76,12 +76,14 @@ def compose_images(ids, folders):
         imgs = []
         for folder in folders:
             path = folder + str(index) +'.png'
-            imgs.append(scipy.misc.imread(path).astype(np.float))
-        img = np.concatenate(imgs, axis=0)
+            cur_img = scipy.misc.imread(path).astype(np.float)
+            imgs.append(cur_img)
+            imgs.append(np.ones([1]+list(cur_img.shape)[1:])*255)
+        img = np.concatenate(imgs[:-1], axis=0)
         scipy.misc.imsave(result_folder+str(index)+'.png', img)
 
 if __name__ == '__main__':
-    folders = ['./images/', './labels/', './samples3/', './samples1/', './samples2/']
-    # folders = ['./images/', './labels/', './samples/']
+    # folders = ['./images/', './labels/', './samples3/', './samples1/', './samples2/']
+    folders = ['./images/', './labels/', './samples/']
     ids = [1,2,3,4,5]
     compose_images(ids, folders)
