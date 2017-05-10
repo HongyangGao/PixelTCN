@@ -73,5 +73,6 @@ def compose_images(folders):
 
 
 if __name__ == '__main__':
-    path = './dataset/testing.h5'
+    DATADIR = '/tempspace/hyuan/DrSleep/VOC2012/VOCdevkit/VOC2012/dataset/'
+    path = DATADIR + 'testing.h5'
     compose_images(path, None)
