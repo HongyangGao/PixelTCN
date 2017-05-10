@@ -57,7 +57,7 @@ def get_images(paths, pre_height, pre_width, height, width,
     return np.array(images).astype(np.float32)
 
 
-def function(image_folder='./images/', label_folder='./labels/'):
+def save_data(path, image_folder='./images/', label_folder='./labels/'):
     if not os.path.exists(image_folder):
         os.makedirs(image_folder)
     if not os.path.exists(label_folder):
@@ -74,4 +74,4 @@ def compose_images(folders):
 
 if __name__ == '__main__':
     path = './dataset/testing.h5'
-    compose_images(path, None)
+    save_data(path)
