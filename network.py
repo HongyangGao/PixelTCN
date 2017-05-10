@@ -69,8 +69,8 @@ class DilatedPixelCNN(object):
         weights = tf.cast(
             tf.greater(self.decoded_predictions, 0, name='m_iou/greater'),
             tf.int32, name='m_iou/weights')
-        self.m_iou, self.miou_op = tf.contrib.metrics.streaming_mean_iou(
-            self.decoded_predictions, self.annotations, self.conf.class_num,
+        self.m_iou, self.miou_op = tf.metrics.mean_iou(
+            self.annotations, self.decoded_predictions, self.conf.class_num,
             weights, name='m_iou/m_ious')
 
     def config_summary(self, name):
@@ -159,22 +159,22 @@ class DilatedPixelCNN(object):
         train_reader = H5DataLoader(self.conf.data_dir+self.conf.train_data)
         valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data)
         for epoch_num in range(self.conf.max_epoch):
-            if epoch_num % self.conf.test_step == 1:
+            if epoch_num % self.conf.test_step == 0:
                 inputs, annotations = valid_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
                 loss, summary = self.sess.run(
                     [self.loss_op, self.valid_summary], feed_dict=feed_dict)
-                self.save_summary(summary, epoch_num)
+                self.save_summary(summary, epoch_num+self.conf.reload_epoch)
                 print('----testing loss', loss)
-            elif epoch_num % self.conf.summary_step == 1:
+            elif epoch_num % self.conf.summary_step == 0:
                 inputs, annotations = train_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
                 loss, _, summary = self.sess.run(
                     [self.loss_op, self.train_op, self.train_summary],
                     feed_dict=feed_dict)
-                self.save_summary(summary, epoch_num)
+                self.save_summary(summary, epoch_num+self.conf.reload_epoch)
             else:
                 inputs, annotations = train_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
@@ -182,8 +182,8 @@ class DilatedPixelCNN(object):
                 loss, _ = self.sess.run(
                     [self.loss_op, self.train_op], feed_dict=feed_dict)
                 print('----training loss', loss)
-            if epoch_num % self.conf.save_step == 1:
-                self.save(epoch_num)
+            if epoch_num % self.conf.save_step == 0:
+                self.save(epoch_num+self.conf.reload_epoch)
 
     def test(self):
         print('---->testing ', self.conf.test_epoch)
@@ -192,15 +192,15 @@ class DilatedPixelCNN(object):
         else:
             print("please set a reasonable test_epoch")
             return
-        valid_reader = H5DataLoader(
-            self.conf.data_dir+self.conf.valid_data, False)
+        test_reader = H5DataLoader(
+            self.conf.data_dir+self.conf.test_data, False)
         self.sess.run(tf.local_variables_initializer())
         count = 0
         losses = []
         accuracies = []
         m_ious = []
         while True:
-            inputs, annotations = valid_reader.next_batch(self.conf.batch)
+            inputs, annotations = test_reader.next_batch(self.conf.batch)
             if inputs.shape[0] < self.conf.batch:
                 break
             feed_dict = {self.inputs: inputs, self.annotations: annotations}
@@ -227,6 +227,7 @@ class DilatedPixelCNN(object):
             self.conf.data_dir+self.conf.test_data, False)
         predictions = []
         while True:
+            print('-----1')
             inputs, annotations = test_reader.next_batch(self.conf.batch)
             if inputs.shape[0] < self.conf.batch:
                 break
