@@ -57,7 +57,7 @@ def get_images(paths, pre_height, pre_width, height, width,
     return np.array(images).astype(np.float32)
 
 
-def function(image_folder='./images/', label_folder='./labels/'):
+def save_data(path, image_folder='./images/', label_folder='./labels/'):
     if not os.path.exists(image_folder):
         os.makedirs(image_folder)
     if not os.path.exists(label_folder):
@@ -68,11 +68,22 @@ def function(image_folder='./images/', label_folder='./labels/'):
         imsave(data_file['Y'][index], label_folder+str(index)+'.png')
 
 
-def compose_images(folders):
-    pass
-
+def compose_images(ids, folders):
+    result_folder = './results/'
+    if not os.path.exists(result_folder):
+        os.makedirs(result_folder)
+    for index in ids:
+        imgs = []
+        for folder in folders:
+            path = folder + str(index) +'.png'
+            cur_img = scipy.misc.imread(path).astype(np.float)
+            imgs.append(cur_img)
+            imgs.append(np.ones([1]+list(cur_img.shape)[1:])*255)
+        img = np.concatenate(imgs[:-1], axis=0)
+        scipy.misc.imsave(result_folder+str(index)+'.png', img)
 
 if __name__ == '__main__':
-    DATADIR = '/tempspace/hyuan/DrSleep/VOC2012/VOCdevkit/VOC2012/dataset/'
-    path = DATADIR + 'testing.h5'
-    compose_images(path, None)
+    # folders = ['./images/', './labels/', './samples3/', './samples1/', './samples2/']
+    folders = ['./images/', './labels/', './samples/']
+    ids = [1,2,3,4,5]
+    compose_images(ids, folders)
