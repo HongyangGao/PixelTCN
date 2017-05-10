@@ -68,10 +68,20 @@ def save_data(path, image_folder='./images/', label_folder='./labels/'):
         imsave(data_file['Y'][index], label_folder+str(index)+'.png')
 
 
-def compose_images(folders):
-    pass
-
+def compose_images(ids, folders):
+    result_folder = './results/'
+    if not os.path.exists(result_folder):
+        os.makedirs(result_folder)
+    for index in ids:
+        imgs = []
+        for folder in folders:
+            path = folder + str(index) +'.png'
+            imgs.append(scipy.misc.imread(path).astype(np.float))
+        img = np.concatenate(imgs, axis=0)
+        scipy.misc.imsave(result_folder+str(index)+'.png', img)
 
 if __name__ == '__main__':
-    path = './dataset/testing.h5'
-    save_data(path)
+    folders = ['./images/', './labels/', './samples3/', './samples1/', './samples2/']
+    # folders = ['./images/', './labels/', './samples/']
+    ids = [1,2,3,4,5]
+    compose_images(ids, folders)
