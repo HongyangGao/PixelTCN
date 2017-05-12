@@ -68,26 +68,32 @@ def save_data(path, image_folder='./images/', label_folder='./labels/'):
         imsave(data_file['Y'][index], label_folder+str(index)+'.png')
 
 
-def compose_images(ids, folders):
+def compose_images(ids, wides, folders, name):
     result_folder = './results/'
     if not os.path.exists(result_folder):
         os.makedirs(result_folder)
     id_imgs = []
-    for index in ids:
+    for i, index in enumerate(ids):
         imgs = []
         for folder in folders:
             path = folder + str(index) +'.png'
             cur_img = scipy.misc.imread(path).astype(np.float)
+            cur_img = scipy.misc.imresize(cur_img, [256, int(256*wides[i])])
             imgs.append(cur_img)
-            imgs.append(np.ones([1]+list(cur_img.shape)[1:])*255)
+            imgs.append(np.ones([3]+list(cur_img.shape)[1:])*255)
         img = np.concatenate(imgs[:-1], axis=0)
         id_imgs.append(img)
-        id_imgs.append(np.ones((img.shape[0], 1, img.shape[2]))*255)
+        id_imgs.append(np.ones((img.shape[0], 2, img.shape[2]))*255)
     id_img = np.concatenate(id_imgs[:-1], axis=1)
-    scipy.misc.imsave(result_folder+'result.png', id_img)
+    scipy.misc.imsave(result_folder+name+'.png', id_img)
 
 if __name__ == '__main__':
-    # folders = ['./images/', './labels/', './samples3/', './samples1/', './samples2/']
-    folders = ['./images/', './labels/', './samples/']
-    ids = [1,2,3,4,5]
-    compose_images(ids, folders)
+    folders = ['./images/', './labels/', './samples3/', './samples1/', './samples2/']
+    pre_folders = ['./images/', './labels/', './samples3/', './samples2/']
+    # folders = ['./images/', './labels/', './samples/']
+    ids = [214, 238, 720, 256, 276,277,298,480,571,920,1017,1422]
+    wides = [1]*len(ids)
+    ids_pre = [15,153,160,534,906]
+    pre_wides = [1.3, 1.2, 1.8, 1.1, 1.1]
+    compose_images(ids_pre, pre_wides, pre_folders, 'pre_result')
+    compose_images(ids, wides, folders, 'result')
