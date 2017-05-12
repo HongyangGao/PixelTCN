@@ -227,7 +227,6 @@ class DilatedPixelCNN(object):
             self.conf.data_dir+self.conf.test_data, False)
         predictions = []
         while True:
-            print('-----1')
             inputs, annotations = test_reader.next_batch(self.conf.batch)
             if inputs.shape[0] < self.conf.batch:
                 break
