@@ -1,2 +1,2 @@
-# DilatedPixelCNN
-Implementation of Dilated PixelCNN
+# Pixel Deconvolutional Networks
+Implementation of Pixel Deconvolutional Networks for semantic segmentation.
