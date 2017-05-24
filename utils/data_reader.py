@@ -2,7 +2,7 @@ import glob
 import h5py
 import tensorflow as tf
 import numpy as np
-from img_utils import get_images
+from .img_utils import get_images
 
 
 class FileDataReader(object):

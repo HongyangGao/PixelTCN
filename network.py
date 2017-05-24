@@ -1,12 +1,12 @@
 import os
 import numpy as np
 import tensorflow as tf
-from data_reader import H5DataLoader
-from img_utils import imsave
-import ops
+from utils.data_reader import H5DataLoader
+from utils.img_utils import imsave
+from utils import ops
 
 
-class DilatedPixelCNN(object):
+class PixelDCN(object):
 
     def __init__(self, sess, conf):
         self.sess = sess

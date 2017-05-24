@@ -2,7 +2,7 @@ import os
 import time
 import argparse
 import tensorflow as tf
-from network import DilatedPixelCNN
+from network import PixelDCN
 
 
 def configure():
@@ -37,10 +37,10 @@ def configure():
     flags.DEFINE_integer('class_num', 21, 'output class number')
     flags.DEFINE_integer('start_channel_num', 64, 'start number of outputs')
     flags.DEFINE_string(
-        'conv_name', 'co_conv2d', 'Use which conv op: conv2d or co_conv2d')
+        'conv_name', 'ipixel_cl', 'Use which conv op: conv2d or ipixel_cl')
     flags.DEFINE_string(
-        'deconv_name', 'co_dilated_conv',
-        'Use which deconv op: deconv, dilated_conv, co_dilated_conv')
+        'deconv_name', 'ipixel_dcl',
+        'Use which deconv op: deconv, pixel_dcl, ipixel_dcl')
     flags.FLAGS.__dict__['__parsed'] = False
     return flags.FLAGS
 
@@ -54,7 +54,7 @@ def main(_):
         print('invalid action: ', args.action)
         print("Please input a action: train, test, or predict")
     else:
-        model = DilatedPixelCNN(tf.Session(), configure())
+        model = PixelDCN(tf.Session(), configure())
         getattr(model, args.action)()
 
 
