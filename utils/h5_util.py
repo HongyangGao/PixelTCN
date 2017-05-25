@@ -3,7 +3,12 @@ import h5py
 from progressbar import ProgressBar
 from PIL import Image
 
-# BGR: (104.00698793,116.66876762,122.67891434)
+"""
+This model is used to convert data files to h5 database to facilitate training
+"""
+
+
+# IMG_MEAN for Pascal dataset
 IMG_MEAN = np.array(
     (122.67891434, 116.66876762, 104.00698793), dtype=np.float32)  # RGB
 

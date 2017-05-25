@@ -5,6 +5,13 @@ import numpy as np
 from .img_utils import get_images
 
 
+"""
+This module provides three data reader: directly from file, from h5 database, use channel
+
+h5 database is recommended since it could enable very data feeding speed
+"""
+
+
 class FileDataReader(object):
 
     def __init__(self, data_dir, input_height, input_width, height, width,

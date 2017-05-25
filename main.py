@@ -4,11 +4,16 @@ import argparse
 import tensorflow as tf
 from network import PixelDCN
 
+"""
+This file provides configuration to build U-NET for semantic segmentation.
+
+"""
+
 
 def configure():
     # training
     flags = tf.app.flags
-    flags.DEFINE_integer('max_epoch', 10, '# of step in an epoch')
+    flags.DEFINE_integer('max_step', 10, '# of step for training')
     flags.DEFINE_integer('test_step', 100, '# of step to test a model')
     flags.DEFINE_integer('save_step', 1000, '# of step to save a model')
     flags.DEFINE_integer('summary_step', 100, '# of step to save the summary')
@@ -29,18 +34,21 @@ def configure():
     flags.DEFINE_string('modeldir', './modeldir', 'Model dir')
     flags.DEFINE_string('sample_dir', './samples/', 'Sample directory')
     flags.DEFINE_string('model_name', 'model', 'Model file name')
-    flags.DEFINE_integer('reload_epoch', 0, 'Reload epoch')
-    flags.DEFINE_integer('test_epoch', 0, 'Test or predict epoch')
+    flags.DEFINE_integer('reload_step', 0, 'Reload step to continue training')
+    flags.DEFINE_integer('test_step', 0, 'Test or predict model at this step')
     flags.DEFINE_integer('random_seed', int(time.time()), 'random seed')
     # network
     flags.DEFINE_integer('network_depth', 5, 'network depth for U-Net')
     flags.DEFINE_integer('class_num', 21, 'output class number')
-    flags.DEFINE_integer('start_channel_num', 64, 'start number of outputs')
+    flags.DEFINE_integer('start_channel_num', 64,
+                         'start number of outputs for the first conv layer')
     flags.DEFINE_string(
-        'conv_name', 'ipixel_cl', 'Use which conv op: conv2d or ipixel_cl')
+        'conv_name', 'conv2d',
+        'Use which conv op in decoder: conv2d or ipixel_cl')
     flags.DEFINE_string(
         'deconv_name', 'pixel_dcl',
-        'Use which deconv op: deconv, pixel_dcl, ipixel_dcl')
+        'Use which deconv op in decoder: deconv, pixel_dcl, ipixel_dcl')
+    # fix bug of flags
     flags.FLAGS.__dict__['__parsed'] = False
     return flags.FLAGS
 
@@ -59,5 +67,6 @@ def main(_):
 
 
 if __name__ == '__main__':
+    # configure which gpu or cpu to use
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     tf.app.run()

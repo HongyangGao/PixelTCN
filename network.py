@@ -6,6 +6,12 @@ from utils.img_utils import imsave
 from utils import ops
 
 
+"""
+This module build a standard U-NET for semantic segmentation.
+If want VAE using pixelDCL, please visit this code:
+https://github.com/HongyangGao/UVAE
+"""
+
 class PixelDCN(object):
 
     def __init__(self, sess, conf):
@@ -154,18 +160,18 @@ class PixelDCN(object):
         self.writer.add_summary(summary, step)
 
     def train(self):
-        if self.conf.reload_epoch > 0:
-            self.reload(self.conf.reload_epoch)
+        if self.conf.reload_step > 0:
+            self.reload(self.conf.reload_step)
         train_reader = H5DataLoader(self.conf.data_dir+self.conf.train_data)
         valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data)
-        for epoch_num in range(self.conf.max_epoch):
+        for epoch_num in range(self.conf.max_step):
             if epoch_num % self.conf.test_step == 0:
                 inputs, annotations = valid_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
                 loss, summary = self.sess.run(
                     [self.loss_op, self.valid_summary], feed_dict=feed_dict)
-                self.save_summary(summary, epoch_num+self.conf.reload_epoch)
+                self.save_summary(summary, epoch_num+self.conf.reload_step)
                 print('----testing loss', loss)
             elif epoch_num % self.conf.summary_step == 0:
                 inputs, annotations = train_reader.next_batch(self.conf.batch)
@@ -174,7 +180,7 @@ class PixelDCN(object):
                 loss, _, summary = self.sess.run(
                     [self.loss_op, self.train_op, self.train_summary],
                     feed_dict=feed_dict)
-                self.save_summary(summary, epoch_num+self.conf.reload_epoch)
+                self.save_summary(summary, epoch_num+self.conf.reload_step)
             else:
                 inputs, annotations = train_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
@@ -183,14 +189,14 @@ class PixelDCN(object):
                     [self.loss_op, self.train_op], feed_dict=feed_dict)
                 print('----training loss', loss)
             if epoch_num % self.conf.save_step == 0:
-                self.save(epoch_num+self.conf.reload_epoch)
+                self.save(epoch_num+self.conf.reload_step)
 
     def test(self):
-        print('---->testing ', self.conf.test_epoch)
-        if self.conf.test_epoch > 0:
-            self.reload(self.conf.test_epoch)
+        print('---->testing ', self.conf.test_step)
+        if self.conf.test_step > 0:
+            self.reload(self.conf.test_step)
         else:
-            print("please set a reasonable test_epoch")
+            print("please set a reasonable test_step")
             return
         test_reader = H5DataLoader(
             self.conf.data_dir+self.conf.test_data, False)
@@ -217,11 +223,11 @@ class PixelDCN(object):
         print('M_iou: ', m_ious[-1])
 
     def predict(self):
-        print('---->predicting ', self.conf.test_epoch)
-        if self.conf.test_epoch > 0:
-            self.reload(self.conf.test_epoch)
+        print('---->predicting ', self.conf.test_step)
+        if self.conf.test_step > 0:
+            self.reload(self.conf.test_step)
         else:
-            print("please set a reasonable test_epoch")
+            print("please set a reasonable test_step")
             return
         test_reader = H5DataLoader(
             self.conf.data_dir+self.conf.test_data, False)

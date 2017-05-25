@@ -3,6 +3,11 @@ import numpy as np
 from . import pixel_dcn
 
 
+"""
+This module provides some short functions to reduce code volume
+"""
+
+
 def conv2d(inputs, num_outputs, kernel_size, scope, norm=True,
            d_format='NHWC'):
     outputs = tf.contrib.layers.conv2d(
