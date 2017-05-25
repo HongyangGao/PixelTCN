@@ -4,9 +4,9 @@ Created by [Hongyang Gao](http://eecs.wsu.edu/~hgao/), [Hao Yuan](http://www.eec
 
 ## Introduction
 
-Pixel deconvolutional layer (PixelDCL) is a more effective way to realize up-sampling operations than deconvolutional layer.
+Pixel deconvolutional layer (PixelDCL) is a more effective way to perform up-sampling operations than deconvolutional layer.
 
-Detailed information about PixelDCL is provided by [arXiv tech report] (https://arxiv.org/abs/1705.06820).
+Detailed information about PixelDCL is provided in [arXiv tech report] (https://arxiv.org/abs/1705.06820).
 
 ## Citation
 
@@ -20,6 +20,17 @@ If using this code, please cite our paper.
   year={2017}
 }
 ```
+
+## Results
+
+#### Semantic segmentation
+
+
+
+#### Generate real images (VAE)
+
+
+
 ## System requirement
 
 #### Programming language
@@ -81,7 +92,7 @@ test_step: which step to test or predict
 
 random_seed: random seed for tensorflow
 
-#### network architecture
+#### Network architecture
 
 network_depth: how deep of the U-Net including the bottom layer
 
