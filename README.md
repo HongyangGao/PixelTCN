@@ -94,7 +94,7 @@ conv_name: use which convolutional layer in decoder. We have conv2d for standard
 
 deconv_name: use which upsampling layer in decoder. We have deconv for standard deconvolutional layer, ipixel_dcl for input pixel deconvolutional layer, and pixel_dcl for pixel deconvolutional layer proposed in our paper.
 
-## Training
+## Training and Testing
 
 #### Start training
 
@@ -133,3 +133,21 @@ python main.py --action=predict
 ```
 
 The predicted segmentation results will be in sampledir, colored.
+
+## Use PixelDCL
+
+If you want to use pixel deconvolutional layer in other models, just copy the file
+
+```
+utils/pixel_dcn.py
+```
+
+and use it in your model:
+
+```
+
+from pixel_dcn import pixel_dcl, ipixel_dcl, ipixel_cl
+
+```
+
+Currently, this version only support up-sampling by factor 2 such as from 2x2 to 4x4. We may provide more flexible version in the future.
