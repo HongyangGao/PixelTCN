@@ -20,3 +20,15 @@ If using this code, please cite our paper.
   year={2017}
 }
 ```
+## System requirement
+
+### Programming language
+Python 3
+
+### Python Packages
+tensorflow (CPU) or tensorflow-gpu (GPU)
+numpy
+h5py
+progressbar
+PIL
+scipy
