@@ -4,5 +4,4 @@ __pycache__
 logdir*
 modeldir*
 samples*
-main*.py
 Thumbs.db
