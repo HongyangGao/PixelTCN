@@ -25,7 +25,7 @@ If using this code, please cite our paper.
 
 #### Semantic segmentation
 
-![model](./assets/pre_pascal_result.png)
+![model](./assets/pre_pascal_result.png | width=60%)
 
 Comparison of semantic segmentation results. The first and second rows
 are images and ground true labels, respectively. The third and fourth
