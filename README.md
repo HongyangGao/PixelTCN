@@ -39,7 +39,7 @@ utils/h5_utils.py could be used to generate h5 files.
 
 All network hyperparameters are configured in main.py.
 
-#### training
+#### Training
 
 max_step: how many iterations or steps to train
 
@@ -49,7 +49,7 @@ save_step: how many steps to save the model
 
 summary_step: how many steps to save the summary
 
-#### data
+#### Data
 
 data_dir: data directory
 
@@ -65,7 +65,7 @@ channel: input image channel number
 
 height, width: height and width of input image
 
-#### debug
+#### Debug
 
 logdir: where to store log
 
@@ -104,7 +104,7 @@ python main.py
 ```
 The training of a U-Net for semantic segmentation
 
-#### training process visualization
+#### Training process visualization
 
 We employ tensorboard to visualize the training process.
 
@@ -114,7 +114,7 @@ tensorboard --logdir=logdir/
 
 The segmentation results including training and validation accuracies, and prediction output are all available through tensorboard.
 
-#### testing and prediction
+#### Testing and prediction
 
 Select a good point to test your model based on validation or other measures.
 
@@ -134,7 +134,7 @@ python main.py --action=predict
 
 The predicted segmentation results will be in sampledir, colored.
 
-## Use PixelDCL
+## Use PixelDCL in other models
 
 If you want to use pixel deconvolutional layer in other models, just copy the file
 
