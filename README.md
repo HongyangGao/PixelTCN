@@ -4,7 +4,7 @@ Created by [Hongyang Gao](http://eecs.wsu.edu/~hgao/), [Hao Yuan](http://www.eec
 
 ## Introduction
 
-Pixel deconvolutional layer (PixelDCL) is an more effective way to realize up-sampling operations than deconvolutional layer.
+Pixel deconvolutional layer (PixelDCL) is a more effective way to realize up-sampling operations than deconvolutional layer.
 
 Detailed information about PixelDCL is provided by [arXiv tech report] (https://arxiv.org/abs/1705.06820).
 
@@ -102,7 +102,7 @@ After configure the network, we can start to train. Run
 ```
 python main.py
 ```
-The training of a U-Net for semantic segmentation
+The training of a U-Net for semantic segmentation will start.
 
 #### Training process visualization
 
@@ -112,13 +112,13 @@ We employ tensorboard to visualize the training process.
 tensorboard --logdir=logdir/
 ```
 
-The segmentation results including training and validation accuracies, and prediction output are all available through tensorboard.
+The segmentation results including training and validation accuracies, and the prediction outputs are all available in tensorboard.
 
 #### Testing and prediction
 
 Select a good point to test your model based on validation or other measures.
 
-Fill the test_step with the checkpoint you want to test, run
+Fill the test_step in main.py with the checkpoint you want to test, run
 
 ```
 python main.py --action=test
@@ -132,7 +132,7 @@ If you want to make some predictions, run
 python main.py --action=predict
 ```
 
-The predicted segmentation results will be in sampledir, colored.
+The predicted segmentation results will be in sampledir set in main.py, colored.
 
 ## Use PixelDCL in other models
 
@@ -148,6 +148,10 @@ and use it in your model:
 
 from pixel_dcn import pixel_dcl, ipixel_dcl, ipixel_cl
 
+
+outputs = pixel_dcl(inputs, out_num, kernel_size, scope)
+
 ```
 
 Currently, this version only support up-sampling by factor 2 such as from 2x2 to 4x4. We may provide more flexible version in the future.
+
