@@ -22,13 +22,9 @@ If using this code, please cite our paper.
 ```
 ## System requirement
 
-### Programming language
-Python 3
+#### Programming language
+Python 3.5+
 
-### Python Packages
-tensorflow (CPU) or tensorflow-gpu (GPU)
-numpy
-h5py
-progressbar
-PIL
-scipy
+#### Python Packages
+tensorflow (CPU) or tensorflow-gpu (GPU), numpy, h5py, progressbar, PIL, scipy
+
