@@ -39,7 +39,7 @@ def configure():
     flags.DEFINE_string(
         'conv_name', 'ipixel_cl', 'Use which conv op: conv2d or ipixel_cl')
     flags.DEFINE_string(
-        'deconv_name', 'ipixel_dcl',
+        'deconv_name', 'pixel_dcl',
         'Use which deconv op: deconv, pixel_dcl, ipixel_dcl')
     flags.FLAGS.__dict__['__parsed'] = False
     return flags.FLAGS
