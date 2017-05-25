@@ -28,8 +28,8 @@ class PixelDCN(object):
             os.makedirs(conf.modeldir)
         if not os.path.exists(conf.logdir):
             os.makedirs(conf.logdir)
-        if not os.path.exists(conf.sample_dir):
-            os.makedirs(conf.sample_dir)
+        if not os.path.exists(conf.sampledir):
+            os.makedirs(conf.sampledir)
         self.configure_networks()
         self.train_summary = self.config_summary('train')
         self.valid_summary = self.config_summary('valid')
@@ -242,7 +242,7 @@ class PixelDCN(object):
         print('----->saving predictions')
         for index, prediction in enumerate(predictions):
             for i in range(prediction.shape[0]):
-                imsave(prediction[i], self.conf.sample_dir +
+                imsave(prediction[i], self.conf.sampledir +
                        str(index*prediction.shape[0]+i)+'.png')
 
     def save(self, step):

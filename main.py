@@ -18,8 +18,6 @@ def configure():
     flags.DEFINE_integer('save_step', 1000, '# of step to save a model')
     flags.DEFINE_integer('summary_step', 100, '# of step to save the summary')
     flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
-    flags.DEFINE_float('keep_prob', 0.9, 'dropout probability')
-    flags.DEFINE_boolean('use_gpu', False, 'use GPU or not')
     # data
     flags.DEFINE_string('data_dir', './dataset/', 'Name of data directory')
     flags.DEFINE_string('train_data', 'training.h5', 'Training data')
@@ -32,12 +30,12 @@ def configure():
     # Debug
     flags.DEFINE_string('logdir', './logdir', 'Log dir')
     flags.DEFINE_string('modeldir', './modeldir', 'Model dir')
-    flags.DEFINE_string('sample_dir', './samples/', 'Sample directory')
+    flags.DEFINE_string('sampledir', './samples/', 'Sample directory')
     flags.DEFINE_string('model_name', 'model', 'Model file name')
     flags.DEFINE_integer('reload_step', 0, 'Reload step to continue training')
     flags.DEFINE_integer('test_step', 0, 'Test or predict model at this step')
     flags.DEFINE_integer('random_seed', int(time.time()), 'random seed')
-    # network
+    # network architecture
     flags.DEFINE_integer('network_depth', 5, 'network depth for U-Net')
     flags.DEFINE_integer('class_num', 21, 'output class number')
     flags.DEFINE_integer('start_channel_num', 64,
