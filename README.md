@@ -25,11 +25,11 @@ If using this code, please cite our paper.
 
 #### Semantic segmentation
 
-
+![drawing](./assets/pre_pascal_result.png)
 
 #### Generate real images (VAE)
 
-
+![drawing](./assets/vae_result.png)
 
 ## System requirement
 
