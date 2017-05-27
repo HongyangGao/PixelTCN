@@ -65,11 +65,11 @@ All network hyperparameters are configured in main.py.
 
 max_step: how many iterations or steps to train
 
-test_step: how many steps to perform a mini test or validation
+test_interval: how many steps to perform a mini test or validation
 
-save_step: how many steps to save the model
+save_interval: how many steps to save the model
 
-summary_step: how many steps to save the summary
+summary_interval: how many steps to save the summary
 
 #### Data
 
