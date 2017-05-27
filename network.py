@@ -17,7 +17,7 @@ class PixelDCN(object):
     def __init__(self, sess, conf):
         self.sess = sess
         self.conf = conf
-        self.def_params(self)
+        self.def_params()
         if not os.path.exists(conf.modeldir):
             os.makedirs(conf.modeldir)
         if not os.path.exists(conf.logdir):
