@@ -29,7 +29,7 @@ def deconv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
         epsilon=1e-5, scope=scope+'/batch_norm', data_format=d_format)
 
 
-def ipixel_cl(inputs, out_num, kernel_size, scope, norm=True, d_format='NHWC'):
+def ipixel_cl(inputs, out_num, kernel_size, scope, d_format='NHWC'):
     outputs = pixel_dcn.ipixel_cl(
         inputs, out_num, kernel_size, scope, None, d_format)
     return tf.contrib.layers.batch_norm(
