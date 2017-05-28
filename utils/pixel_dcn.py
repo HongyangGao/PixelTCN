@@ -43,8 +43,7 @@ def pixel_dcl(inputs, out_num, kernel_size, scope, activation_fn=tf.nn.relu,
     return outputs
 
 
-def pixel_dcl3d(inputs, out_num, kernel_size, scope, activation_fn=tf.nn.relu,
-                d_format='NHWC'):
+def pixel_dcl3d(inputs, out_num, kernel_size, scope, activation_fn=tf.nn.relu):
     """
     inputs: input tensor
     out_num: output channel number
@@ -52,21 +51,27 @@ def pixel_dcl3d(inputs, out_num, kernel_size, scope, activation_fn=tf.nn.relu,
     scope: operation scope
     activation_fn: activation function, could be None if needed
     """
-    axis = (d_format.index('H'), d_format.index('W'))
-    conv0 = conv2d(inputs, out_num, kernel_size, scope+'/conv0')
-    conv1 = conv2d(conv0, out_num, kernel_size, scope+'/conv1')
-    dilated_conv0 = dilate_tensor(conv0, axis, (0, 0), scope+'/dialte_conv0')
-    dilated_conv1 = dilate_tensor(conv1, axis, (1, 1), scope+'/dialte_conv1')
-    conv1 = tf.add(dilated_conv0, dilated_conv1, scope+'/add1')
-    with tf.variable_scope(scope+'/conv2'):
-        shape = list(kernel_size) + [out_num, out_num]
-        weights = tf.get_variable(
-            'weights', shape, initializer=tf.truncated_normal_initializer())
-        weights = tf.multiply(weights, get_mask(shape, scope))
-        strides = [1, 1, 1, 1]
-        conv2 = tf.nn.conv2d(conv1, weights, strides, padding='SAME',
-                             data_format=d_format)
-    outputs = tf.add(conv1, conv2, name=scope+'/add2')
+    axis, c_axis = (1, 2, 3), 4  # only support format 'NDHWC'
+    conv0 = conv3d(inputs, out_num, kernel_size, scope+'/conv0')
+    conv1 = conv3d(conv0, out_num, kernel_size, scope+'/conv1')
+    concat1 = tf.concat([conv0, conv1], c_axis, name=scope+'/concat1')
+    conv2 = conv3d(concat1, 3*out_num, kernel_size, scope+'/conv2')
+    concat2 = tf.concat([conv0, conv2], c_axis, name=scope+'/concat2')
+    conv3 = conv3d(concat2, 3*out_num, kernel_size, scope+'/conv3')
+    conv2_list = tf.split(conv2, 3, c_axis, name=scope+'/split1')
+    conv3_list = tf.split(conv3, 3, c_axis, name=scope+'/split1')
+    dilated_conv0 = dilate_tensor(
+        conv0, axis, (0, 0, 0), scope+'/dialte_conv0')
+    dilated_conv1 = dilate_tensor(
+        conv1, axis, (1, 1, 1), scope+'/dialte_conv1')
+    dilated_list = [dilated_conv0, dilated_conv1]
+    for index, shifts in enumerate([(1, 1, 0), (1, 0, 1), (0, 1, 1)]):
+        dilated_list.append(dilate_tensor(
+            conv2_list[index], axis, shifts, scope+'/dialte_conv2_%s' % index))
+    for index, shifts in enumerate([(1, 0, 0), (0, 0, 1), (0, 1, 0)]):
+        dilated_list.append(dilate_tensor(
+            conv3_list[index], axis, shifts, scope+'/dialte_conv3_%s' % index))
+    outputs = tf.add_n(dilated_list, name=scope+'/add')
     if activation_fn:
         outputs = activation_fn(outputs)
     return outputs
@@ -116,26 +121,26 @@ def ipixel_cl(inputs, out_num, kernel_size, scope, activation_fn=tf.nn.relu,
     axis = (d_format.index('H'), d_format.index('W'))
     channel_axis = d_format.index('C')
     conv1 = conv2d(inputs, out_num, kernel_size, scope+'/conv1',
-        stride=2, d_format=d_format)
+                   stride=2, d_format=d_format)
     dialte1 = dilate_tensor(conv1, axis, (0, 0), scope+'/dialte1')
     shifted_inputs = shift_tensor(inputs, axis, (1, 1), scope+'/shift1')
     conv1_concat = tf.concat(
         [shifted_inputs, dialte1], channel_axis, name=scope+'/concat1')
     conv2 = conv2d(inputs, out_num, kernel_size, scope+'/conv2',
-        stride=2, d_format=d_format)
+                   stride=2, d_format=d_format)
     dialte2 = dilate_tensor(conv2, axis, (1, 1), scope+'/dialte2')
     conv3 = tf.add_n([dialte1, dialte2], scope+'/add')
     shifted_inputs = shift_tensor(inputs, axis, 1, 0, scope+'/shift2')
     conv2_concat = tf.concat(
         [shifted_inputs, conv3], channel_axis, name=scope+'/concat2')
     conv4 = conv2d(inputs, out_num, kernel_size, scope+'/conv4',
-        stride=2, d_format=d_format)
+                   stride=2, d_format=d_format)
     dialte3 = dilate_tensor(conv4, axis, (1, 0), scope+'/dialte3')
     shifted_inputs = shift_tensor(inputs, axis, 0, 1, scope+'/shift3')
     conv2_concat = tf.concat(
         [shifted_inputs, conv3], channel_axis, name=scope+'/concat3')
     conv5 = conv2d(inputs, out_num, kernel_size, scope+'/conv5',
-        stride=2, d_format=d_format)
+                   stride=2, d_format=d_format)
     dialte4 = dilate_tensor(conv5, axis, (0, 1), scope+'/dialte4')
     outputs = tf.add_n([dialte1, dialte2, dialte3, dialte4], scope+'/add')
     if activation_fn:
@@ -143,10 +148,17 @@ def ipixel_cl(inputs, out_num, kernel_size, scope, activation_fn=tf.nn.relu,
     return outputs
 
 
-def conv2d(inputs, num_outputs, kernel_size, scope, stride=1, d_format='NHWC'):
+def conv2d(inputs, out_num, kernel_size, scope, stride=1, d_format='NHWC'):
     outputs = tf.contrib.layers.conv2d(
-        inputs, num_outputs, kernel_size, scope=scope, stride=stride,
+        inputs, out_num, kernel_size, scope=scope, stride=stride,
         data_format=d_format, activation_fn=None, biases_initializer=None)
+    return outputs
+
+
+def conv3d(inputs, out_num, kernel_size, scope):
+    outputs = tf.layers.conv3d(
+        inputs, out_num, kernel_size, padding='same', name=scope+'/conv',
+        kernel_initializer=tf.random_uniform_initializer)
     return outputs
 
 

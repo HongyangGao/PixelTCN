@@ -67,7 +67,7 @@ def deconv(inputs, out_num, kernel_size, scope, data_type='2D'):
         updates_collections=None, scope=scope+'/batch_norm')
 
 
-def pool2d(inputs, kernel_size, scope, data_type='2D'):
+def pool(inputs, kernel_size, scope, data_type='2D'):
     if data_type == '2D':
         return tf.layers.max_pooling2d(inputs, kernel_size, (2, 2), name=scope)
     return tf.layers.max_pooling3d(inputs, kernel_size, (2, 2, 2), name=scope)
