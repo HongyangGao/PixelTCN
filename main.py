@@ -13,7 +13,7 @@ This file provides configuration to build U-NET for semantic segmentation.
 def configure():
     # training
     flags = tf.app.flags
-    flags.DEFINE_integer('max_step', 10, '# of step for training')
+    flags.DEFINE_integer('max_step', 10000, '# of step for training')
     flags.DEFINE_integer('test_interval', 100, '# of interval to test a model')
     flags.DEFINE_integer('save_interval', 1000, '# of interval to save a model')
     flags.DEFINE_integer('summary_interval', 100, '# of step to save the summary')
