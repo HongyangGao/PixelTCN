@@ -43,8 +43,8 @@ def configure():
     flags.DEFINE_integer('start_channel_num', 64,
                          'start number of outputs for the first conv layer')
     flags.DEFINE_string(
-        'conv_name', 'conv2d',
-        'Use which conv op in decoder: conv2d or ipixel_cl')
+        'conv_name', 'conv',
+        'Use which conv op in decoder: conv or ipixel_cl')
     flags.DEFINE_string(
         'deconv_name', 'pixel_dcl',
         'Use which deconv op in decoder: deconv, pixel_dcl, ipixel_dcl')

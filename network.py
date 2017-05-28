@@ -12,6 +12,7 @@ If want VAE using pixelDCL, please visit this code:
 https://github.com/HongyangGao/UVAE
 """
 
+
 class PixelDCN(object):
 
     def __init__(self, sess, conf):
@@ -35,15 +36,20 @@ class PixelDCN(object):
             self.pool_size = (2, 2, 2)
             self.axis, self.channel_axis = (1, 2, 3), 4
             self.input_shape = [
-                self.conf.batch, self.conf.depth, self.conf.height, self.conf.width, self.conf.channel]
-            self.output_shape = [self.conf.batch, self.conf.depth, self.conf.height, self.conf.width]
+                self.conf.batch, self.conf.depth, self.conf.height,
+                self.conf.width, self.conf.channel]
+            self.output_shape = [
+                self.conf.batch, self.conf.depth, self.conf.height,
+                self.conf.width]
         else:
             self.conv_size = (3, 3)
             self.pool_size = (2, 2)
             self.axis, self.channel_axis = (1, 2), 3
             self.input_shape = [
-                self.conf.batch, self.conf.height, self.conf.width, self.conf.channel]
-            self.output_shape = [self.conf.batch, self.conf.height, self.conf.width]
+                self.conf.batch, self.conf.height, self.conf.width,
+                self.conf.channel]
+            self.output_shape = [
+                self.conf.batch, self.conf.height, self.conf.width]
 
     def configure_networks(self):
         self.build_network()
@@ -128,36 +134,33 @@ class PixelDCN(object):
         return outputs
 
     def construct_down_block(self, inputs, name, down_outputs, first=False):
-        num_outputs = self.conf.start_channel_num if first else 2 * \
+        out_num = self.conf.start_channel_num if first else 2 * \
             inputs.shape[self.channel_axis].value
-        conv1 = ops.conv2d(
-            inputs, num_outputs, self.conv_size, name+'/conv1')
-        conv2 = ops.conv2d(
-            conv1, num_outputs, self.conv_size, name+'/conv2',)
+        conv1 = ops.conv(inputs, out_num, self.conv_size, name+'/conv1')
+        conv2 = ops.conv(conv1, out_num, self.conv_size, name+'/conv2',)
         down_outputs.append(conv2)
-        pool = ops.pool2d(
-            conv2, self.pool_size, name+'/pool')
+        pool = ops.pool2d(conv2, self.pool_size, name+'/pool')
         return pool
 
     def construct_bottom_block(self, inputs, name):
-        num_outputs = inputs.shape[self.channel_axis].value
-        conv1 = ops.conv2d(
-            inputs, 2*num_outputs, self.conv_size, name+'/conv1')
-        conv2 = ops.conv2d(
-            conv1, num_outputs, self.conv_size, name+'/conv2')
+        out_num = inputs.shape[self.channel_axis].value
+        conv1 = ops.conv(
+            inputs, 2*out_num, self.conv_size, name+'/conv1')
+        conv2 = ops.conv(
+            conv1, out_num, self.conv_size, name+'/conv2')
         return conv2
 
     def construct_up_block(self, inputs, down_inputs, name, final=False):
-        num_outputs = inputs.shape[self.channel_axis].value
+        out_num = inputs.shape[self.channel_axis].value
         conv1 = self.deconv_func()(
-            inputs, num_outputs, self.conv_size, name+'/conv1')
+            inputs, out_num, self.conv_size, name+'/conv1')
         conv1 = tf.concat(
             [conv1, down_inputs], self.channel_axis, name=name+'/concat')
         conv2 = self.conv_func()(
-            conv1, num_outputs, self.conv_size, name+'/conv2')
-        num_outputs = self.conf.class_num if final else num_outputs/2
-        conv3 = ops.conv2d(
-            conv2, num_outputs, self.conv_size, name+'/conv3')
+            conv1, out_num, self.conv_size, name+'/conv2')
+        out_num = self.conf.class_num if final else out_num/2
+        conv3 = ops.conv(
+            conv2, out_num, self.conv_size, name+'/conv3')
         return conv3
 
     def deconv_func(self):
