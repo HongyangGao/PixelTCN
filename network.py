@@ -101,18 +101,18 @@ class PixelDCN(object):
         summarys.append(tf.summary.scalar(name+'/loss', self.loss_op))
         summarys.append(tf.summary.scalar(name+'/accuracy', self.accuracy_op))
         if name == 'valid':
-            summarys.append(tf.summary.image(
-                name+'/input', self.inputs, max_outputs=100))
-            summarys.append(tf.summary.image(
-                name +
-                '/annotation', tf.cast(tf.expand_dims(
-                    self.annotations, -1), tf.float32),
-                max_outputs=100))
-            summarys.append(tf.summary.image(
-                name +
-                '/prediction', tf.cast(tf.expand_dims(
-                    self.decoded_predictions, -1), tf.float32),
-                max_outputs=100))
+            summarys.append(
+                tf.summary.image(name+'/input', self.inputs, max_outputs=100))
+            summarys.append(
+                tf.summary.image(
+                    name+'/annotation',
+                    tf.cast(tf.expand_dims(self.annotations, -1),
+                            tf.float32), max_outputs=100))
+            summarys.append(
+                tf.summary.image(
+                    name+'/prediction',
+                    tf.cast(tf.expand_dims(self.decoded_predictions, -1),
+                            tf.float32), max_outputs=100))
         summary = tf.summary.merge(summarys)
         return summary
 
@@ -122,18 +122,18 @@ class PixelDCN(object):
         for layer_index in range(self.conf.network_depth-1):
             is_first = True if not layer_index else False
             name = 'down%s' % layer_index
-            outputs = self.construct_down_block(
-                outputs, name, down_outputs, first=is_first)
-        outputs = self.construct_bottom_block(outputs, 'bottom')
+            outputs = self.build_down_block(
+                outputs, name, down_outputs, is_first)
+        outputs = self.build_bottom_block(outputs, 'bottom')
         for layer_index in range(self.conf.network_depth-2, -1, -1):
             is_final = True if layer_index == 0 else False
             name = 'up%s' % layer_index
             down_inputs = down_outputs[layer_index]
-            outputs = self.construct_up_block(
-                outputs, down_inputs, name, final=is_final)
+            outputs = self.build_up_block(
+                outputs, down_inputs, name, is_final)
         return outputs
 
-    def construct_down_block(self, inputs, name, down_outputs, first=False):
+    def build_down_block(self, inputs, name, down_outputs, first=False):
         out_num = self.conf.start_channel_num if first else 2 * \
             inputs.shape[self.channel_axis].value
         conv1 = ops.conv(inputs, out_num, self.conv_size, name+'/conv1')
@@ -142,7 +142,7 @@ class PixelDCN(object):
         pool = ops.pool2d(conv2, self.pool_size, name+'/pool')
         return pool
 
-    def construct_bottom_block(self, inputs, name):
+    def build_bottom_block(self, inputs, name):
         out_num = inputs.shape[self.channel_axis].value
         conv1 = ops.conv(
             inputs, 2*out_num, self.conv_size, name+'/conv1')
@@ -150,7 +150,7 @@ class PixelDCN(object):
             conv1, out_num, self.conv_size, name+'/conv2')
         return conv2
 
-    def construct_up_block(self, inputs, down_inputs, name, final=False):
+    def build_up_block(self, inputs, down_inputs, name, final=False):
         out_num = inputs.shape[self.channel_axis].value
         conv1 = self.deconv_func()(
             inputs, out_num, self.conv_size, name+'/conv1')
