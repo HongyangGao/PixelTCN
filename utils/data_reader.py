@@ -3,7 +3,7 @@ import h5py
 import random
 import tensorflow as tf
 import numpy as np
-from img_utils import get_images
+from .img_utils import get_images
 
 
 """
@@ -148,8 +148,3 @@ class QueueDataReader(object):
         self.coord.request_stop()
         self.coord.join(self.threads)
 
-
-if __name__ == '__main__':
-    reader = H53DDataLoader('../dataset/training3d.h5', (3, 2, 64, 64, 1))
-    a, b = reader.next_batch(3)
-    print(a.shape, b.shape)
