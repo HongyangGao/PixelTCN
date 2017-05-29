@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import tensorflow as tf
-from utils.data_reader import H5DataLoader
+from utils.data_reader import H5DataLoader, H53DDataLoader
 from utils.img_utils import imsave
 from utils import ops
 
@@ -100,7 +100,7 @@ class PixelDCN(object):
         summarys = []
         summarys.append(tf.summary.scalar(name+'/loss', self.loss_op))
         summarys.append(tf.summary.scalar(name+'/accuracy', self.accuracy_op))
-        if name == 'valid':
+        if name == 'valid' and self.conf.data_type=='2D':
             summarys.append(
                 tf.summary.image(name+'/input', self.inputs, max_outputs=100))
             summarys.append(
@@ -181,8 +181,16 @@ class PixelDCN(object):
     def train(self):
         if self.conf.reload_step > 0:
             self.reload(self.conf.reload_step)
-        train_reader = H5DataLoader(self.conf.data_dir+self.conf.train_data)
-        valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data)
+        if self.conf.data_type == '2D':
+            train_reader = H5DataLoader(
+                self.conf.data_dir+self.conf.train_data)
+            valid_reader = H5DataLoader(
+                self.conf.data_dir+self.conf.valid_data)
+        else:
+            train_reader = H53DDataLoader(
+                self.conf.data_dir+self.conf.train_data, self.input_shape)
+            valid_reader = H53DDataLoader(
+                self.conf.data_dir+self.conf.valid_data, self.input_shape)
         for epoch_num in range(self.conf.max_step):
             if epoch_num % self.conf.test_interval == 0:
                 inputs, annotations = valid_reader.next_batch(self.conf.batch)

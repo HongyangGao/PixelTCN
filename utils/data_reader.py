@@ -1,8 +1,9 @@
 import glob
 import h5py
+import random
 import tensorflow as tf
 import numpy as np
-from .img_utils import get_images
+from img_utils import get_images
 
 
 """
@@ -61,6 +62,36 @@ class H5DataLoader(object):
             return np.empty(0), np.empty(0)
 
 
+class H53DDataLoader(object):
+
+    def __init__(self, data_path, shape, is_train=True):
+        self.is_train = is_train
+        data_file = h5py.File(data_path, 'r')
+        self.images, self.labels = data_file['data'], data_file['label']
+        self.t_h, self.t_w, self.t_d = data_file['data'].shape
+        self.d, self.h, self.w = shape[1:-1]
+
+    def next_batch(self, batch_size):
+        batches_ids = set()
+        while len(batches_ids) < batch_size:
+            h = random.randint(0, self.t_h-self.h)
+            w = random.randint(0, self.t_w-self.w)
+            d = random.randint(0, self.t_d-self.d)
+            batches_ids.add((h, w, d))
+        image_batches = []
+        label_batches = []
+        for h, w, d in batches_ids:
+            image_batches.append(
+                self.images[h:h+self.h, w:w+self.w, d:d+self.d])
+            label_batches.append(
+                self.labels[h:h+self.h, w:w+self.w, d:d+self.d])
+        images = np.expand_dims(np.stack(image_batches, axis=0), axis=-1)
+        images = np.transpose(images, (0, 3, 1, 2, 4))
+        labels = np.stack(label_batches, axis=0)
+        labels = np.transpose(labels, (0, 3, 1, 2))
+        return images, labels
+
+
 class QueueDataReader(object):
 
     def __init__(self, sess, data_dir, data_list, input_size, class_num,
@@ -116,3 +147,9 @@ class QueueDataReader(object):
     def close(self):
         self.coord.request_stop()
         self.coord.join(self.threads)
+
+
+if __name__ == '__main__':
+    reader = H53DDataLoader('../dataset/training3d.h5', (3, 2, 64, 64, 1))
+    a, b = reader.next_batch(3)
+    print(a.shape, b.shape)

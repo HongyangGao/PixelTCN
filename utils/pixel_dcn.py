@@ -156,9 +156,11 @@ def conv2d(inputs, out_num, kernel_size, scope, stride=1, d_format='NHWC'):
 
 
 def conv3d(inputs, out_num, kernel_size, scope):
-    outputs = tf.layers.conv3d(
-        inputs, out_num, kernel_size, padding='same', name=scope+'/conv',
-        kernel_initializer=tf.random_uniform_initializer)
+    shape = list(kernel_size) + [inputs.shape[-1].value, out_num]
+    weights = tf.get_variable(
+        scope+'/conv/weights', shape, initializer=tf.truncated_normal_initializer())
+    outputs = tf.nn.conv3d(
+        inputs, weights, (1, 1, 1, 1, 1), padding='SAME', name=scope+'/conv')
     return outputs
 
 
