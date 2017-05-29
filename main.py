@@ -27,8 +27,8 @@ def configure():
     flags.DEFINE_integer('batch', 2, 'batch size')
     flags.DEFINE_integer('channel', 1, 'channel size')
     flags.DEFINE_integer('depth', 16, 'depth size')
-    flags.DEFINE_integer('height', 64, 'height size')
-    flags.DEFINE_integer('width', 64, 'width size')
+    flags.DEFINE_integer('height', 128, 'height size')
+    flags.DEFINE_integer('width', 128, 'width size')
     # Debug
     flags.DEFINE_string('logdir', './logdir', 'Log dir')
     flags.DEFINE_string('modeldir', './modeldir', 'Model dir')
@@ -39,8 +39,8 @@ def configure():
     flags.DEFINE_integer('random_seed', int(time.time()), 'random seed')
     # network architecture
     flags.DEFINE_integer('network_depth', 5, 'network depth for U-Net')
-    flags.DEFINE_integer('class_num', 21, 'output class number')
-    flags.DEFINE_integer('start_channel_num', 64,
+    flags.DEFINE_integer('class_num', 4, 'output class number')
+    flags.DEFINE_integer('start_channel_num', 16,
                          'start number of outputs for the first conv layer')
     flags.DEFINE_string(
         'conv_name', 'conv',
