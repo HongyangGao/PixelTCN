@@ -28,7 +28,10 @@ def ipixel_cl(inputs, out_num, kernel_size, scope, data_type='2D'):
 
 def ipixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D'):
     # only support 2d
-    outputs = pixel_dcn.ipixel_dcl(inputs, out_num, kernel_size, scope, None)
+    if data_type == '2D':
+        outputs = pixel_dcn.ipixel_dcl(inputs, out_num, kernel_size, scope, None)
+    else:
+        outputs = pixel_dcn.ipixel_dcl3d(inputs, out_num, kernel_size, scope, None)
     return tf.contrib.layers.batch_norm(
         outputs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
         updates_collections=None, scope=scope+'/batch_norm')

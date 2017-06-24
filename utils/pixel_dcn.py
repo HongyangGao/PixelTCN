@@ -43,6 +43,41 @@ def pixel_dcl(inputs, out_num, kernel_size, scope, activation_fn=tf.nn.relu,
     return outputs
 
 
+def ipixel_dcl3d(inputs, out_num, kernel_size, scope, activation_fn=tf.nn.relu):
+    """
+    inputs: input tensor
+    out_num: output channel number
+    kernel_size: convolutional kernel size
+    scope: operation scope
+    activation_fn: activation function, could be None if needed
+    """
+    axis, c_axis = (1, 2, 3), 4  # only support format 'NDHWC'
+    conv0 = conv3d(inputs, out_num, kernel_size, scope+'/conv0')
+    conv0_add = tf.add(inputs, conv0, name=scope+'/add0')
+    conv1 = conv3d(conv0_add, out_num, kernel_size, scope+'/conv1')
+    conv1_add = tf.add(conv0_add, conv1, name=scope+'/add1')
+    conv2 = conv3d(conv1_add, 3*out_num, kernel_size, scope+'/conv2')
+    conv2_list = tf.split(conv2, 3, c_axis, name=scope+'/split1')
+    conv2_add = tf.add_n(conv2_list+[conv1_add], name=scope+'/add2')
+    conv3 = conv3d(conv2_add, 3*out_num, kernel_size, scope+'/conv3')
+    conv3_list = tf.split(conv3, 3, c_axis, name=scope+'/split2')
+    dilated_conv0 = dilate_tensor(
+        conv0, axis, (0, 0, 0), scope+'/dialte_conv0')
+    dilated_conv1 = dilate_tensor(
+        conv1, axis, (1, 1, 1), scope+'/dialte_conv1')
+    dilated_list = [dilated_conv0, dilated_conv1]
+    for index, shifts in enumerate([(1, 1, 0), (1, 0, 1), (0, 1, 1)]):
+        dilated_list.append(dilate_tensor(
+            conv2_list[index], axis, shifts, scope+'/dialte_conv2_%s' % index))
+    for index, shifts in enumerate([(1, 0, 0), (0, 0, 1), (0, 1, 0)]):
+        dilated_list.append(dilate_tensor(
+            conv3_list[index], axis, shifts, scope+'/dialte_conv3_%s' % index))
+    outputs = tf.add_n(dilated_list, name=scope+'/add')
+    if activation_fn:
+        outputs = activation_fn(outputs)
+    return outputs
+
+
 def pixel_dcl3d(inputs, out_num, kernel_size, scope, activation_fn=tf.nn.relu):
     """
     inputs: input tensor
