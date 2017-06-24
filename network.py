@@ -7,7 +7,7 @@ from utils import ops
 
 
 """
-This module build a standard U-NET for semantic segmentation.
+This module builds a standard U-NET for semantic segmentation.
 If want VAE using pixelDCL, please visit this code:
 https://github.com/HongyangGao/UVAE
 """
