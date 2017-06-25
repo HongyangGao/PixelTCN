@@ -70,13 +70,8 @@ class PixelDCN(object):
         self.cal_loss()
 
     def cal_loss(self):
-        expand_annotations = tf.expand_dims(
-            self.annotations, -1, name='annotations/expand_dims')
-        one_hot_annotations = tf.squeeze(
-            expand_annotations, axis=[self.channel_axis],
-            name='annotations/squeeze')
         one_hot_annotations = tf.one_hot(
-            one_hot_annotations, depth=self.conf.class_num,
+            self.annotations, depth=self.conf.class_num,
             axis=self.channel_axis, name='annotations/one_hot')
         losses = tf.losses.softmax_cross_entropy(
             one_hot_annotations, self.predictions, scope='loss/losses')
