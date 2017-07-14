@@ -127,8 +127,8 @@ class PixelDCN(object):
             inputs.shape[self.channel_axis].value
         conv1 = ops.conv2d(
             inputs, num_outputs, self.conv_size, name+'/conv1')
-        conv2 = ops.conv2d(
-            conv1, num_outputs, self.conv_size, name+'/conv2',)
+        conv2 = self.conv_func()(
+            conv1, num_outputs, self.conv_size, name+'/conv2')
         down_outputs.append(conv2)
         pool = ops.pool2d(
             conv2, self.pool_size, name+'/pool')
@@ -148,7 +148,7 @@ class PixelDCN(object):
             inputs, num_outputs, self.conv_size, name+'/conv1')
         conv1 = tf.concat(
             [conv1, down_inputs], self.channel_axis, name=name+'/concat')
-        conv2 = self.conv_func()(
+        conv2 = ops.conv2d(
             conv1, num_outputs, self.conv_size, name+'/conv2')
         num_outputs = self.conf.class_num if final else num_outputs/2
         conv3 = ops.conv2d(

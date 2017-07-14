@@ -43,10 +43,10 @@ def configure():
     flags.DEFINE_integer('start_channel_num', 64,
                          'start number of outputs for the first conv layer')
     flags.DEFINE_string(
-        'conv_name', 'conv2d',
-        'Use which conv op in decoder: conv2d or ipixel_cl')
+        'conv_name', 'conv3d',
+        'Use which conv op in decoder: conv2d or conv3d')
     flags.DEFINE_string(
-        'deconv_name', 'pixel_dcl',
+        'deconv_name', 'deconv',
         'Use which deconv op in decoder: deconv, pixel_dcl, ipixel_dcl')
     # fix bug of flags
     flags.FLAGS.__dict__['__parsed'] = False
