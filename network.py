@@ -179,7 +179,7 @@ class PixelDCN(object):
                     [self.loss_op, self.valid_summary], feed_dict=feed_dict)
                 self.save_summary(summary, epoch_num+self.conf.reload_step)
                 print('----testing loss', loss)
-            elif epoch_num % self.conf.summary_interval == 0:
+            if epoch_num % self.conf.summary_interval == 0:
                 inputs, annotations = train_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
                              self.annotations: annotations}
