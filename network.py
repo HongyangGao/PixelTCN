@@ -170,7 +170,7 @@ class PixelDCN(object):
             self.reload(self.conf.reload_step)
         train_reader = H5DataLoader(self.conf.data_dir+self.conf.train_data)
         valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data)
-        for epoch_num in range(self.conf.max_step):
+        for epoch_num in range(self.conf.max_step+1):
             if epoch_num % self.conf.test_interval == 0:
                 inputs, annotations = valid_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
