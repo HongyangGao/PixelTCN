@@ -52,14 +52,9 @@ class H5DataLoader(object):
         self.cur_index = next_index
         if len(cur_indexes) < batch_size and self.is_train:
             self.gen_indexes()
-            self.cur_index = batch_size-len(cur_indexes)
-            cur_indexes += list(self.indexes[:batch_size-len(cur_indexes)])
-        cur_indexes = sorted(set(cur_indexes))
-        try:
-            return self.images[cur_indexes], self.labels[cur_indexes]
-        except Exception as e:
-            print(e)
-            return np.empty(0), np.empty(0)
+            return self.next_batch(batch_size)
+        cur_indexes.sort()
+        return self.images[cur_indexes], self.labels[cur_indexes]
 
 
 class H53DDataLoader(object):
