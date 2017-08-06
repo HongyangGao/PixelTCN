@@ -46,7 +46,7 @@ def configure():
         'conv_name', 'conv',
         'Use which conv op in decoder: conv or ipixel_cl')
     flags.DEFINE_string(
-        'deconv_name', 'ipixel_dcl',
+        'deconv_name', 'pixel_dcl',
         'Use which deconv op in decoder: deconv, pixel_dcl, ipixel_dcl')
     # fix bug of flags
     flags.FLAGS.__dict__['__parsed'] = False
