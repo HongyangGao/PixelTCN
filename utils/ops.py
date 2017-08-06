@@ -8,12 +8,10 @@ This module provides some short functions to reduce code volume
 """
 
 
-def conv2d(inputs, num_outputs, kernel_size, scope, norm=True,
-           d_format='NHWC'):
+def conv2d(inputs, num_outputs, kernel_size, scope, d_format='NHWC'):
     outputs = tf.contrib.layers.conv2d(
         inputs, num_outputs, kernel_size, scope=scope,
         data_format=d_format, activation_fn=None, biases_initializer=None)
-
     return tf.contrib.layers.batch_norm(
         outputs, decay=0.9, center=True, activation_fn=tf.nn.relu,
         updates_collections=None, epsilon=1e-5, scope=scope+'/batch_norm',
@@ -21,6 +19,7 @@ def conv2d(inputs, num_outputs, kernel_size, scope, norm=True,
 
 
 def deconv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
+    kernel_size = [i*2 for i in kernel_size]
     outputs = tf.contrib.layers.conv2d_transpose(
         inputs, out_num, kernel_size, scope=scope, stride=[2, 2],
         data_format=d_format, activation_fn=None, biases_initializer=None)
