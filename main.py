@@ -15,8 +15,8 @@ def configure():
     flags = tf.app.flags
     flags.DEFINE_integer('max_step', 10, '# of step for training')
     flags.DEFINE_integer('test_interval', 100, '# of interval to test a model')
-    flags.DEFINE_integer('save_interval', 1000, '# of interval to save a model')
-    flags.DEFINE_integer('summary_interval', 100, '# of step to save the summary')
+    flags.DEFINE_integer('save_interval', 1000, '# of interval to save  model')
+    flags.DEFINE_integer('summary_interval', 100, '# of step to save summary')
     flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
     # data
     flags.DEFINE_string('data_dir', './dataset/', 'Name of data directory')
@@ -26,7 +26,7 @@ def configure():
     flags.DEFINE_string('data_type', '2D', '2D data or 3D data')
     flags.DEFINE_integer('batch', 2, 'batch size')
     flags.DEFINE_integer('channel', 3, 'channel size')
-    flags.DEFINE_integer('depth', 256, 'depth size')
+    flags.DEFINE_integer('depth', 16, 'depth size')
     flags.DEFINE_integer('height', 256, 'height size')
     flags.DEFINE_integer('width', 256, 'width size')
     # Debug
@@ -43,8 +43,8 @@ def configure():
     flags.DEFINE_integer('start_channel_num', 64,
                          'start number of outputs for the first conv layer')
     flags.DEFINE_string(
-        'conv_name', 'conv2d',
-        'Use which conv op in decoder: conv2d or ipixel_cl')
+        'conv_name', 'conv',
+        'Use which conv op in decoder: conv or ipixel_cl')
     flags.DEFINE_string(
         'deconv_name', 'pixel_dcl',
         'Use which deconv op in decoder: deconv, pixel_dcl, ipixel_dcl')

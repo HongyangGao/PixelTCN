@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 from . import pixel_dcn
 
 
@@ -8,51 +7,74 @@ This module provides some short functions to reduce code volume
 """
 
 
-def conv2d(inputs, num_outputs, kernel_size, scope, d_format='NHWC'):
-    outputs = tf.contrib.layers.conv2d(
-        inputs, num_outputs, kernel_size, scope=scope,
-        data_format=d_format, activation_fn=None, biases_initializer=None)
+def pixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D'):
+    if data_type == '2D':
+        outs = pixel_dcn.pixel_dcl(inputs, out_num, kernel_size, scope, None)
+    else:
+        outs = pixel_dcn.pixel_dcl3d(inputs, out_num, kernel_size, scope, None)
     return tf.contrib.layers.batch_norm(
-        outputs, decay=0.9, center=True, activation_fn=tf.nn.relu,
-        updates_collections=None, epsilon=1e-5, scope=scope+'/batch_norm',
-        data_format=d_format)
+        outs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
+        updates_collections=None, scope=scope+'/batch_norm')
 
 
-def deconv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
-    kernel_size = [i*2 for i in kernel_size]
-    outputs = tf.contrib.layers.conv2d_transpose(
-        inputs, out_num, kernel_size, scope=scope, stride=[2, 2],
-        data_format=d_format, activation_fn=None, biases_initializer=None)
+def ipixel_cl(inputs, out_num, kernel_size, scope, data_type='2D'):
+    # only support 2d
+    outputs = pixel_dcn.ipixel_cl(inputs, out_num, kernel_size, scope, None)
     return tf.contrib.layers.batch_norm(
-        outputs, decay=0.9, activation_fn=tf.nn.relu, updates_collections=None,
-        epsilon=1e-5, scope=scope+'/batch_norm', data_format=d_format)
+        outputs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
+        updates_collections=None, scope=scope+'/batch_norm')
 
 
-def ipixel_cl(inputs, out_num, kernel_size, scope, d_format='NHWC'):
-    outputs = pixel_dcn.ipixel_cl(
-        inputs, out_num, kernel_size, scope, None, d_format)
+def ipixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D'):
+    if data_type == '2D':
+        outs = pixel_dcn.ipixel_dcl(inputs, out_num, kernel_size, scope, None)
+    else:
+        outs = pixel_dcn.ipixel_dcl3d(
+            inputs, out_num, kernel_size, scope, None)
     return tf.contrib.layers.batch_norm(
-        outputs, decay=0.9, activation_fn=tf.nn.relu, updates_collections=None,
-        epsilon=1e-5, scope=scope+'/batch_norm', data_format=d_format)
+        outs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
+        updates_collections=None, scope=scope+'/batch_norm')
 
 
-def pixel_dcl(inputs, out_num, kernel_size, scope, d_format='NHWC'):
-    outputs = pixel_dcn.pixel_dcl(
-        inputs, out_num, kernel_size, scope, None, d_format)
+def conv(inputs, out_num, kernel_size, scope, data_type='2D'):
+    if data_type == '2D':
+        outs = tf.layers.conv2d(
+            inputs, out_num, kernel_size, padding='same', name=scope+'/conv',
+            kernel_initializer=tf.truncated_normal_initializer)
+    else:
+        shape = list(kernel_size) + [inputs.shape[-1].value, out_num]
+        weights = tf.get_variable(
+            scope+'/conv/weights', shape,
+            initializer=tf.truncated_normal_initializer())
+        outs = tf.nn.conv3d(
+            inputs, weights, (1, 1, 1, 1, 1), padding='SAME',
+            name=scope+'/conv')
     return tf.contrib.layers.batch_norm(
-        outputs, decay=0.9, activation_fn=tf.nn.relu, updates_collections=None,
-        epsilon=1e-5, scope=scope+'/batch_norm', data_format=d_format)
+        outs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
+        updates_collections=None, scope=scope+'/batch_norm')
 
 
-def ipixel_dcl(inputs, out_num, kernel_size, scope, d_format='NHWC'):
-    outputs = pixel_dcn.ipixel_dcl(
-        inputs, out_num, kernel_size, scope, None, d_format)
+def deconv(inputs, out_num, kernel_size, scope, data_type='2D'):
+    if data_type == '2D':
+        outs = tf.layers.conv2d_transpose(
+            inputs, out_num, kernel_size, (2, 2), padding='same', name=scope,
+            kernel_initializer=tf.truncated_normal_initializer)
+    else:
+        shape = list(kernel_size) + [out_num, out_num]
+        input_shape = inputs.shape.as_list()
+        out_shape = [input_shape[0]] + \
+            list(map(lambda x: x*2, input_shape[1:-1])) + [out_num]
+        weights = tf.get_variable(
+            scope+'/deconv/weights', shape,
+            initializer=tf.truncated_normal_initializer())
+        outs = tf.nn.conv3d_transpose(
+            inputs, weights, out_shape, (1, 2, 2, 2, 1), name=scope+'/deconv')
     return tf.contrib.layers.batch_norm(
-        outputs, decay=0.9, activation_fn=tf.nn.relu, updates_collections=None,
-        epsilon=1e-5, scope=scope+'/batch_norm', data_format=d_format)
+        outs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
+        updates_collections=None, scope=scope+'/batch_norm')
 
 
-def pool2d(inputs, kernel_size, scope, data_format='NHWC'):
-    return tf.contrib.layers.max_pool2d(
-        inputs, kernel_size, scope=scope, padding='SAME',
-        data_format=data_format)
+def pool(inputs, kernel_size, scope, data_type='2D'):
+    if data_type == '2D':
+        return tf.layers.max_pooling2d(inputs, kernel_size, (2, 2), name=scope)
+    return tf.layers.max_pooling3d(inputs, kernel_size, (2, 2, 2), name=scope)

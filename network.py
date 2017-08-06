@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import tensorflow as tf
-from utils.data_reader import H5DataLoader
+from utils.data_reader import H5DataLoader, H53DDataLoader
 from utils.img_utils import imsave
 from utils import ops
 
@@ -11,6 +11,7 @@ This module builds a standard U-NET for semantic segmentation.
 If want VAE using pixelDCL, please visit this code:
 https://github.com/HongyangGao/UVAE
 """
+
 
 class PixelDCN(object):
 
@@ -35,15 +36,20 @@ class PixelDCN(object):
             self.pool_size = (2, 2, 2)
             self.axis, self.channel_axis = (1, 2, 3), 4
             self.input_shape = [
-                self.conf.batch, self.conf.depth, self.conf.height, self.conf.width, self.conf.channel]
-            self.output_shape = [self.conf.batch, self.conf.depth, self.conf.height, self.conf.width]
+                self.conf.batch, self.conf.depth, self.conf.height,
+                self.conf.width, self.conf.channel]
+            self.output_shape = [
+                self.conf.batch, self.conf.depth, self.conf.height,
+                self.conf.width]
         else:
             self.conv_size = (3, 3)
             self.pool_size = (2, 2)
             self.axis, self.channel_axis = (1, 2), 3
             self.input_shape = [
-                self.conf.batch, self.conf.height, self.conf.width, self.conf.channel]
-            self.output_shape = [self.conf.batch, self.conf.height, self.conf.width]
+                self.conf.batch, self.conf.height, self.conf.width,
+                self.conf.channel]
+            self.output_shape = [
+                self.conf.batch, self.conf.height, self.conf.width]
 
     def configure_networks(self):
         self.build_network()
@@ -89,17 +95,19 @@ class PixelDCN(object):
         summarys = []
         summarys.append(tf.summary.scalar(name+'/loss', self.loss_op))
         summarys.append(tf.summary.scalar(name+'/accuracy', self.accuracy_op))
-        if name == 'valid':
-            summarys.append(tf.summary.image(
-                name+'/input', self.inputs, max_outputs=100))
-            summarys.append(tf.summary.image(
-                name + '/annotation', tf.cast(tf.expand_dims(
-                    self.annotations, -1), tf.float32),
-                max_outputs=100))
-            summarys.append(tf.summary.image(
-                name + '/prediction', tf.cast(tf.expand_dims(
-                    self.decoded_predictions, -1), tf.float32),
-                max_outputs=100))
+        if name == 'valid' and self.conf.data_type == '2D':
+            summarys.append(
+                tf.summary.image(name+'/input', self.inputs, max_outputs=100))
+            summarys.append(
+                tf.summary.image(
+                    name+'/annotation',
+                    tf.cast(tf.expand_dims(self.annotations, -1),
+                            tf.float32), max_outputs=100))
+            summarys.append(
+                tf.summary.image(
+                    name+'/prediction',
+                    tf.cast(tf.expand_dims(self.decoded_predictions, -1),
+                            tf.float32), max_outputs=100))
         summary = tf.summary.merge(summarys)
         return summary
 
@@ -109,48 +117,50 @@ class PixelDCN(object):
         for layer_index in range(self.conf.network_depth-1):
             is_first = True if not layer_index else False
             name = 'down%s' % layer_index
-            outputs = self.construct_down_block(
-                outputs, name, down_outputs, first=is_first)
-        outputs = self.construct_bottom_block(outputs, 'bottom')
+            outputs = self.build_down_block(
+                outputs, name, down_outputs, is_first)
+        outputs = self.build_bottom_block(outputs, 'bottom')
         for layer_index in range(self.conf.network_depth-2, -1, -1):
             is_final = True if layer_index == 0 else False
             name = 'up%s' % layer_index
             down_inputs = down_outputs[layer_index]
-            outputs = self.construct_up_block(
-                outputs, down_inputs, name, final=is_final)
+            outputs = self.build_up_block(
+                outputs, down_inputs, name, is_final)
         return outputs
 
-    def construct_down_block(self, inputs, name, down_outputs, first=False):
-        num_outputs = self.conf.start_channel_num if first else 2 * \
+    def build_down_block(self, inputs, name, down_outputs, first=False):
+        out_num = self.conf.start_channel_num if first else 2 * \
             inputs.shape[self.channel_axis].value
-        conv1 = ops.conv2d(
-            inputs, num_outputs, self.conv_size, name+'/conv1')
-        conv2 = ops.conv2d(
-            conv1, num_outputs, self.conv_size, name+'/conv2',)
+        conv1 = ops.conv(inputs, out_num, self.conv_size,
+                         name+'/conv1', self.conf.data_type)
+        conv2 = ops.conv(conv1, out_num, self.conv_size,
+                         name+'/conv2', self.conf.data_type)
         down_outputs.append(conv2)
-        pool = ops.pool2d(
-            conv2, self.pool_size, name+'/pool')
+        pool = ops.pool(conv2, self.pool_size, name +
+                        '/pool', self.conf.data_type)
         return pool
 
-    def construct_bottom_block(self, inputs, name):
-        num_outputs = inputs.shape[self.channel_axis].value
-        conv1 = ops.conv2d(
-            inputs, 2*num_outputs, self.conv_size, name+'/conv1')
-        conv2 = ops.conv2d(
-            conv1, num_outputs, self.conv_size, name+'/conv2')
+    def build_bottom_block(self, inputs, name):
+        out_num = inputs.shape[self.channel_axis].value
+        conv1 = ops.conv(
+            inputs, 2*out_num, self.conv_size, name+'/conv1',
+            self.conf.data_type)
+        conv2 = ops.conv(
+            conv1, out_num, self.conv_size, name+'/conv2', self.conf.data_type)
         return conv2
 
-    def construct_up_block(self, inputs, down_inputs, name, final=False):
-        num_outputs = inputs.shape[self.channel_axis].value
+    def build_up_block(self, inputs, down_inputs, name, final=False):
+        out_num = inputs.shape[self.channel_axis].value
         conv1 = self.deconv_func()(
-            inputs, num_outputs, self.conv_size, name+'/conv1')
+            inputs, out_num, self.conv_size, name+'/conv1',
+            self.conf.data_type)
         conv1 = tf.concat(
             [conv1, down_inputs], self.channel_axis, name=name+'/concat')
         conv2 = self.conv_func()(
-            conv1, num_outputs, self.conv_size, name+'/conv2')
-        num_outputs = self.conf.class_num if final else num_outputs/2
-        conv3 = ops.conv2d(
-            conv2, num_outputs, self.conv_size, name+'/conv3')
+            conv1, out_num, self.conv_size, name+'/conv2', self.conf.data_type)
+        out_num = self.conf.class_num if final else out_num/2
+        conv3 = ops.conv(
+            conv2, out_num, self.conv_size, name+'/conv3', self.conf.data_type)
         return conv3
 
     def deconv_func(self):
@@ -166,8 +176,16 @@ class PixelDCN(object):
     def train(self):
         if self.conf.reload_step > 0:
             self.reload(self.conf.reload_step)
-        train_reader = H5DataLoader(self.conf.data_dir+self.conf.train_data)
-        valid_reader = H5DataLoader(self.conf.data_dir+self.conf.valid_data)
+        if self.conf.data_type == '2D':
+            train_reader = H5DataLoader(
+                self.conf.data_dir+self.conf.train_data)
+            valid_reader = H5DataLoader(
+                self.conf.data_dir+self.conf.valid_data)
+        else:
+            train_reader = H53DDataLoader(
+                self.conf.data_dir+self.conf.train_data, self.input_shape)
+            valid_reader = H53DDataLoader(
+                self.conf.data_dir+self.conf.valid_data, self.input_shape)
         for epoch_num in range(self.conf.max_step+1):
             if epoch_num and epoch_num % self.conf.test_interval == 0:
                 inputs, annotations = valid_reader.next_batch(self.conf.batch)
