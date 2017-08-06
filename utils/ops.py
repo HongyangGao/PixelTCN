@@ -8,19 +8,34 @@ This module provides some short functions to reduce code volume
 """
 
 
+<<<<<<< HEAD
 def pixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D'):
     if data_type == '2D':
         outputs = pixel_dcn.pixel_dcl(inputs, out_num, kernel_size, scope, None)
     else:
         outputs = pixel_dcn.pixel_dcl3d(inputs, out_num, kernel_size, scope, None)
+=======
+def conv2d(inputs, num_outputs, kernel_size, scope, d_format='NHWC'):
+    outputs = tf.contrib.layers.conv2d(
+        inputs, num_outputs, kernel_size, scope=scope,
+        data_format=d_format, activation_fn=None, biases_initializer=None)
+>>>>>>> d15aee2bbbe7072c83fac644959ca096a3e25a1c
     return tf.contrib.layers.batch_norm(
         outputs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
         updates_collections=None, scope=scope+'/batch_norm')
 
 
+<<<<<<< HEAD
 def ipixel_cl(inputs, out_num, kernel_size, scope, data_type='2D'):
     # only support 2d
     outputs = pixel_dcn.ipixel_cl(inputs, out_num, kernel_size, scope, None)
+=======
+def deconv(inputs, out_num, kernel_size, scope, d_format='NHWC'):
+    kernel_size = [i*2 for i in kernel_size]
+    outputs = tf.contrib.layers.conv2d_transpose(
+        inputs, out_num, kernel_size, scope=scope, stride=[2, 2],
+        data_format=d_format, activation_fn=None, biases_initializer=None)
+>>>>>>> d15aee2bbbe7072c83fac644959ca096a3e25a1c
     return tf.contrib.layers.batch_norm(
         outputs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
         updates_collections=None, scope=scope+'/batch_norm')
