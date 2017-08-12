@@ -7,7 +7,7 @@ This module provides some short functions to reduce code volume
 """
 
 
-def pixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D'):
+def pixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D', action='add'):
     if data_type == '2D':
         outs = pixel_dcn.pixel_dcl(inputs, out_num, kernel_size, scope, None)
     else:
@@ -25,7 +25,7 @@ def ipixel_cl(inputs, out_num, kernel_size, scope, data_type='2D'):
         updates_collections=None, scope=scope+'/batch_norm')
 
 
-def ipixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D'):
+def ipixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D', action='add'):
     if data_type == '2D':
         outs = pixel_dcn.ipixel_dcl(inputs, out_num, kernel_size, scope, None)
     else:
@@ -54,7 +54,7 @@ def conv(inputs, out_num, kernel_size, scope, data_type='2D'):
         updates_collections=None, scope=scope+'/batch_norm')
 
 
-def deconv(inputs, out_num, kernel_size, scope, data_type='2D'):
+def deconv(inputs, out_num, kernel_size, scope, data_type='2D', **kws):
     if data_type == '2D':
         outs = tf.layers.conv2d_transpose(
             inputs, out_num, kernel_size, (2, 2), padding='same', name=scope,
