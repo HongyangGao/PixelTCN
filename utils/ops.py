@@ -11,7 +11,7 @@ def pixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D', action='add')
     if data_type == '2D':
         outs = pixel_dcn.pixel_dcl(inputs, out_num, kernel_size, scope, None)
     else:
-        outs = pixel_dcn.pixel_dcl3d(inputs, out_num, kernel_size, scope, None)
+        outs = pixel_dcn.pixel_dcl3d(inputs, out_num, kernel_size, scope, action, None)
     return tf.contrib.layers.batch_norm(
         outs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
         updates_collections=None, scope=scope+'/batch_norm')
@@ -30,7 +30,7 @@ def ipixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D', action='add'
         outs = pixel_dcn.ipixel_dcl(inputs, out_num, kernel_size, scope, None)
     else:
         outs = pixel_dcn.ipixel_dcl3d(
-            inputs, out_num, kernel_size, scope, None)
+            inputs, out_num, kernel_size, scope, action, None)
     return tf.contrib.layers.batch_norm(
         outs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
         updates_collections=None, scope=scope+'/batch_norm')
