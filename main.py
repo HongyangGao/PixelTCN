@@ -46,7 +46,7 @@ def configure():
         'conv_name', 'conv',
         'Use which conv op in decoder: conv or ipixel_cl')
     flags.DEFINE_string(
-        'deconv_name', 'pixel_dcl',
+        'deconv_name', 'deconv',
         'Use which deconv op in decoder: deconv, pixel_dcl, ipixel_dcl')
     flags.DEFINE_string(
         'action', 'concat',

@@ -153,7 +153,7 @@ class PixelDCN(object):
         out_num = inputs.shape[self.channel_axis].value
         conv1 = self.deconv_func()(
             inputs, out_num, self.conv_size, name+'/conv1',
-            self.conf.data_type, self.conf.action)
+            self.conf.data_type, action=self.conf.action)
         conv1 = tf.concat(
             [conv1, down_inputs], self.channel_axis, name=name+'/concat')
         conv2 = self.conv_func()(
