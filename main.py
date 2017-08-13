@@ -39,8 +39,8 @@ def configure():
     flags.DEFINE_integer('random_seed', int(time.time()), 'random seed')
     # network architecture
     flags.DEFINE_integer('network_depth', 5, 'network depth for U-Net')
-    flags.DEFINE_integer('class_num', 21, 'output class number')
-    flags.DEFINE_integer('start_channel_num', 64,
+    flags.DEFINE_integer('class_num', 2, 'output class number')
+    flags.DEFINE_integer('start_channel_num', 16,
                          'start number of outputs for the first conv layer')
     flags.DEFINE_string(
         'conv_name', 'conv',
