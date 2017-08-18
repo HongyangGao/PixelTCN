@@ -13,9 +13,9 @@ This file provides configuration to build U-NET for semantic segmentation.
 def configure():
     # training
     flags = tf.app.flags
-    flags.DEFINE_integer('max_step', 10, '# of step for training')
+    flags.DEFINE_integer('max_step', 6, '# of step for training')
     flags.DEFINE_integer('test_interval', 100, '# of interval to test a model')
-    flags.DEFINE_integer('save_interval', 1000, '# of interval to save  model')
+    flags.DEFINE_integer('save_interval', 2, '# of interval to save  model')
     flags.DEFINE_integer('summary_interval', 100, '# of step to save summary')
     flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
     # data
@@ -46,7 +46,7 @@ def configure():
         'conv_name', 'conv',
         'Use which conv op in decoder: conv or ipixel_cl')
     flags.DEFINE_string(
-        'deconv_name', 'deconv',
+        'deconv_name', 'ipixel_dcl',
         'Use which deconv op in decoder: deconv, pixel_dcl, ipixel_dcl')
     flags.DEFINE_string(
         'action', 'concat',
