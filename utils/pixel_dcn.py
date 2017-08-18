@@ -55,10 +55,10 @@ def ipixel_dcl3d(inputs, out_num, kernel_size, scope, action='concat', activatio
     conv0 = conv3d(inputs, out_num, kernel_size, scope+'/conv0')
     combine1 = combine([inputs, conv0], action, c_axis, scope+'/combine1')
     conv1 = conv3d(combine1, out_num, kernel_size, scope+'/conv1')
-    combine2 = combine([combine1, conv1], action, c_axis, scope+'/combine2')
+    combine2 = combine([inputs, conv0, conv1], action, c_axis, scope+'/combine2')
     conv2 = conv3d(combine2, 3*out_num, kernel_size, scope+'/conv2')
     conv2_list = tf.split(conv2, 3, c_axis, name=scope+'/split1')
-    combine3 = combine([conv2, combine2], action, c_axis, scope+'/combine3')
+    combine3 = combine(conv2_list+[inputs, conv0, conv1], action, c_axis, scope+'/combine3')
     conv3 = conv3d(combine3, 3*out_num, kernel_size, scope+'/conv3')
     conv3_list = tf.split(conv3, 3, c_axis, name=scope+'/split2')
     dilated_conv0 = dilate_tensor(
