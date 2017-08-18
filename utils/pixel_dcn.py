@@ -53,7 +53,7 @@ def ipixel_dcl3d(inputs, out_num, kernel_size, scope, action='concat', activatio
     """
     axis, c_axis = (1, 2, 3), 4  # only support format 'NDHWC'
     conv0 = conv3d(inputs, out_num, kernel_size, scope+'/conv0')
-    combine1 = combine([inputs, conv0], action, c_axis, scope+'combine1')
+    combine1 = combine([inputs, conv0], action, c_axis, scope+'/combine1')
     conv1 = conv3d(combine1, out_num, kernel_size, scope+'/conv1')
     combine2 = combine([combine1, conv1], action, c_axis, scope+'/combine2')
     conv2 = conv3d(combine2, 3*out_num, kernel_size, scope+'/conv2')
