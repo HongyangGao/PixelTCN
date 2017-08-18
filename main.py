@@ -58,15 +58,15 @@ def configure():
 
 def main(_):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--action', dest='action', type=str, default='train',
+    parser.add_argument('--action', dest='option', type=str, default='train',
                         help='actions: train, test, or predict')
     args = parser.parse_args()
-    if args.action not in ['train', 'test', 'predict']:
+    if args.option not in ['train', 'test', 'predict']:
         print('invalid action: ', args.action)
         print("Please input a action: train, test, or predict")
     else:
         model = PixelDCN(tf.Session(), configure())
-        getattr(model, args.action)()
+        getattr(model, args.option)()
 
 
 if __name__ == '__main__':
