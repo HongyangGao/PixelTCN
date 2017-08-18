@@ -220,8 +220,12 @@ class PixelDCN(object):
         else:
             print("please set a reasonable test_step")
             return
-        test_reader = H5DataLoader(
-            self.conf.data_dir+self.conf.test_data, False)
+        if self.conf.data_type == '2D':
+            test_reader = H5DataLoader(
+                self.conf.data_dir+self.conf.test_data, False)
+        else:
+            test_reader = H53DDataLoader(
+                self.conf.data_dir+self.conf.test_data, self.input_shape)
         self.sess.run(tf.local_variables_initializer())
         count = 0
         losses = []
@@ -251,8 +255,12 @@ class PixelDCN(object):
         else:
             print("please set a reasonable test_step")
             return
-        test_reader = H5DataLoader(
-            self.conf.data_dir+self.conf.test_data, False)
+        if self.conf.data_type == '2D':
+            test_reader = H5DataLoader(
+                self.conf.data_dir+self.conf.test_data, False)
+        else:
+            test_reader = H53DDataLoader(
+                self.conf.data_dir+self.conf.test_data, self.input_shape)
         predictions = []
         while True:
             inputs, annotations = test_reader.next_batch(self.conf.batch)
