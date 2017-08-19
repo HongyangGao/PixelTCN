@@ -36,7 +36,7 @@ def ipixel_dcl(inputs, out_num, kernel_size, scope, data_type='2D', action='add'
         updates_collections=None, scope=scope+'/batch_norm')
 
 
-def conv(inputs, out_num, kernel_size, scope, data_type='2D'):
+def conv(inputs, out_num, kernel_size, scope, data_type='2D', norm=True):
     if data_type == '2D':
         outs = tf.layers.conv2d(
             inputs, out_num, kernel_size, padding='same', name=scope+'/conv',
@@ -49,9 +49,12 @@ def conv(inputs, out_num, kernel_size, scope, data_type='2D'):
         outs = tf.nn.conv3d(
             inputs, weights, (1, 1, 1, 1, 1), padding='SAME',
             name=scope+'/conv')
-    return tf.contrib.layers.batch_norm(
-        outs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
-        updates_collections=None, scope=scope+'/batch_norm')
+    if norm:
+        return tf.contrib.layers.batch_norm(
+            outs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
+            updates_collections=None, scope=scope+'/batch_norm')
+    else:
+        return outs
 
 
 def deconv(inputs, out_num, kernel_size, scope, data_type='2D', **kws):

@@ -160,7 +160,8 @@ class PixelDCN(object):
             conv1, out_num, self.conv_size, name+'/conv2', self.conf.data_type)
         out_num = self.conf.class_num if final else out_num/2
         conv3 = ops.conv(
-            conv2, out_num, self.conv_size, name+'/conv3', self.conf.data_type)
+            conv2, out_num, self.conv_size, name+'/conv3', self.conf.data_type,
+            not final)
         return conv3
 
     def deconv_func(self):
