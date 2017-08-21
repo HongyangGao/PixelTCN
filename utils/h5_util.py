@@ -23,7 +23,11 @@ def process_image(image, shape, resize_mode=Image.BILINEAR):
     img = Image.open(image)
     img = img.resize(shape, resize_mode)
     img.load()
-    return np.asarray(img, dtype="float32")
+    img = np.asarray(img, dtype="float32")
+    if len(img.shape) < 3:
+        return img.T
+    else:
+        return np.transpose(img, (1,0,2))
 
 
 def build_h5_dataset(data_dir, list_path, out_dir, shape, name, norm=False):
