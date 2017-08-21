@@ -54,7 +54,7 @@ def conv(inputs, out_num, kernel_size, scope, data_type='2D', norm=True):
             outs, decay=0.9, epsilon=1e-5, activation_fn=tf.nn.relu,
             updates_collections=None, scope=scope+'/batch_norm')
     else:
-        return return tf.contrib.layers.batch_norm(
+        return tf.contrib.layers.batch_norm(
             outs, decay=0.9, epsilon=1e-5, activation_fn=None,
             updates_collections=None, scope=scope+'/batch_norm')
 
