@@ -64,31 +64,35 @@ class PixelDCN(object):
     def build_network(self):
         self.inputs = tf.placeholder(
             tf.float32, self.input_shape, name='inputs')
-        self.annotations = tf.placeholder(
-            tf.int64, self.output_shape, name='annotations')
+        self.labels = tf.placeholder(
+            tf.int64, self.output_shape, name='labels')
         self.predictions = self.inference(self.inputs)
         self.cal_loss()
 
     def cal_loss(self):
-        one_hot_annotations = tf.one_hot(
-            self.annotations, depth=self.conf.class_num,
-            axis=self.channel_axis, name='annotations/one_hot')
+        one_hot_labels = tf.one_hot(
+            self.labels, depth=self.conf.class_num,
+            axis=self.channel_axis, name='labels/one_hot')
         losses = tf.losses.softmax_cross_entropy(
-            one_hot_annotations, self.predictions, scope='loss/losses')
+            one_hot_labels, self.predictions, scope='loss/losses')
         self.loss_op = tf.reduce_mean(losses, name='loss/loss_op')
-        self.decoded_predictions = tf.argmax(
+        self.decoded_preds = tf.argmax(
             self.predictions, self.channel_axis, name='accuracy/decode_pred')
         correct_prediction = tf.equal(
-            self.annotations, self.decoded_predictions,
+            self.labels, self.decoded_preds,
             name='accuracy/correct_pred')
         self.accuracy_op = tf.reduce_mean(
             tf.cast(correct_prediction, tf.float32, name='accuracy/cast'),
             name='accuracy/accuracy_op')
+        # weights = tf.cast(
+        #     tf.greater(self.decoded_preds, 0, name='m_iou/greater'),
+        #     tf.int32, name='m_iou/weights')
         weights = tf.cast(
-            tf.greater(self.decoded_predictions, 0, name='m_iou/greater'),
-            tf.int32, name='m_iou/weights')
+            tf.less(self.labels, self.conf.channel, name='m_iou/greater'),
+            tf.int64, name='m_iou/weights')
+        labels = tf.multiply(self.labels, weights, name='m_iou/mul')
         self.m_iou, self.miou_op = tf.metrics.mean_iou(
-            self.annotations, self.decoded_predictions, self.conf.class_num,
+            self.labels, self.decoded_preds, self.conf.class_num,
             weights, name='m_iou/m_ious')
 
     def config_summary(self, name):
@@ -101,12 +105,12 @@ class PixelDCN(object):
             summarys.append(
                 tf.summary.image(
                     name+'/annotation',
-                    tf.cast(tf.expand_dims(self.annotations, -1),
+                    tf.cast(tf.expand_dims(self.labels, -1),
                             tf.float32), max_outputs=100))
             summarys.append(
                 tf.summary.image(
                     name+'/prediction',
-                    tf.cast(tf.expand_dims(self.decoded_predictions, -1),
+                    tf.cast(tf.expand_dims(self.decoded_preds, -1),
                             tf.float32), max_outputs=100))
         summary = tf.summary.merge(summarys)
         return summary
@@ -189,25 +193,25 @@ class PixelDCN(object):
                 self.conf.data_dir+self.conf.valid_data, self.input_shape)
         for epoch_num in range(self.conf.max_step+1):
             if epoch_num and epoch_num % self.conf.test_interval == 0:
-                inputs, annotations = valid_reader.next_batch(self.conf.batch)
+                inputs, labels = valid_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
-                             self.annotations: annotations}
+                             self.labels: labels}
                 loss, summary = self.sess.run(
                     [self.loss_op, self.valid_summary], feed_dict=feed_dict)
                 self.save_summary(summary, epoch_num+self.conf.reload_step)
                 print('----testing loss', loss)
             if epoch_num and epoch_num % self.conf.summary_interval == 0:
-                inputs, annotations = train_reader.next_batch(self.conf.batch)
+                inputs, labels = train_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
-                             self.annotations: annotations}
+                             self.labels: labels}
                 loss, _, summary = self.sess.run(
                     [self.loss_op, self.train_op, self.train_summary],
                     feed_dict=feed_dict)
                 self.save_summary(summary, epoch_num+self.conf.reload_step)
             else:
-                inputs, annotations = train_reader.next_batch(self.conf.batch)
+                inputs, labels = train_reader.next_batch(self.conf.batch)
                 feed_dict = {self.inputs: inputs,
-                             self.annotations: annotations}
+                             self.labels: labels}
                 loss, _ = self.sess.run(
                     [self.loss_op, self.train_op], feed_dict=feed_dict)
                 print('----training loss', loss)
@@ -233,10 +237,10 @@ class PixelDCN(object):
         accuracies = []
         m_ious = []
         while True:
-            inputs, annotations = test_reader.next_batch(self.conf.batch)
+            inputs, labels = test_reader.next_batch(self.conf.batch)
             if inputs.shape[0] < self.conf.batch:
                 break
-            feed_dict = {self.inputs: inputs, self.annotations: annotations}
+            feed_dict = {self.inputs: inputs, self.labels: labels}
             loss, accuracy, m_iou, _ = self.sess.run(
                 [self.loss_op, self.accuracy_op, self.m_iou, self.miou_op],
                 feed_dict=feed_dict)
@@ -264,12 +268,12 @@ class PixelDCN(object):
                 self.conf.data_dir+self.conf.test_data, self.input_shape)
         predictions = []
         while True:
-            inputs, annotations = test_reader.next_batch(self.conf.batch)
+            inputs, labels = test_reader.next_batch(self.conf.batch)
             if inputs.shape[0] < self.conf.batch:
                 break
-            feed_dict = {self.inputs: inputs, self.annotations: annotations}
+            feed_dict = {self.inputs: inputs, self.labels: labels}
             predictions.append(self.sess.run(
-                self.decoded_predictions, feed_dict=feed_dict))
+                self.decoded_preds, feed_dict=feed_dict))
         print('----->saving predictions')
         for index, prediction in enumerate(predictions):
             for i in range(prediction.shape[0]):
