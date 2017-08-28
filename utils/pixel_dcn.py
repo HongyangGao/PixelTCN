@@ -89,10 +89,10 @@ def pixel_dcl3d(inputs, out_num, kernel_size, scope, action='concat', activation
     axis, c_axis = (1, 2, 3), 4  # only support format 'NDHWC'
     conv0 = conv3d(inputs, out_num, kernel_size, scope+'/conv0')
     conv1 = conv3d(conv0, out_num, kernel_size, scope+'/conv1')
-    combine1 = combine([conv0, conv1], action, c_axis, scope=scope+'/combine1')
+    combine1 = combine([conv0, conv1], action, c_axis, scope+'/combine1')
     conv2 = conv3d(combine1, 3*out_num, kernel_size, scope+'/conv2')
     conv2_list = tf.split(conv2, 3, c_axis, name=scope+'/split1')
-    combine2 = combine([conv0]+conv2_list, action, c_axis, scope=scope+'/combine2')
+    combine2 = combine([conv0]+conv2_list, action, c_axis, scope+'/combine2')
     conv3 = conv3d(combine2, 3*out_num, kernel_size, scope+'/conv3')
     conv3_list = tf.split(conv3, 3, c_axis, name=scope+'/split2')
     dilated_conv0 = dilate_tensor(
