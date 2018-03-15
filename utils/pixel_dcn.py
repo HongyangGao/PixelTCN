@@ -8,7 +8,7 @@ This module realizes the three methods proposed in paper
 
 pixel_dcl: realizes Pixel Deconvolutional Layer
 ipixel_dcl: realizes Input Pixel Deconvolutional Layer
-ipixel_dcl: realizes Input Pixel Convolutional Layer
+ipixel_cl: realizes Input Pixel Convolutional Layer
 """
 
 
